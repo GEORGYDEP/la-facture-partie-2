@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="fr-BE">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🧾 La facture — Partie 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e1322; --bg2:#151c31; --bg3:#0a0e1a; --card:#1a2340; --card2:#202b4d;
+  --accent:#22d68a; --orange:#ff8a3d; --gold:#ffc94d; --blue:#5aa9ff;
+  --text:#eef2ff; --text2:#a9b2cf; --text3:#6c779c; --border:#2b3658;
+  --success:#22d68a; --error:#ff4060; --radius:16px;
+  --paper:#fcfbf7; --ink:#1f2636; --ink2:#5d6579; --rule:#dcd8cc; --fill:#fff3bf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;
+  background-image:radial-gradient(1200px 600px at 10% -10%,rgba(34,214,138,.07),transparent 60%),radial-gradient(900px 500px at 110% 10%,rgba(255,138,61,.06),transparent 60%)}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+b{font-weight:700}
+.mono{font-family:'Space Mono',monospace}
+
+/* ===== HEADER / HUD ===== */
+header{position:sticky;top:0;z-index:100;background:rgba(14,19,34,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.hud{max-width:980px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px}
+.logo{font-size:1.5rem}
+.apptitle{font-weight:800;font-size:1rem;letter-spacing:.2px;white-space:nowrap}
+.apptitle small{display:block;font-weight:500;font-size:.72rem;color:var(--text2)}
+.hud .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);font-size:.82rem;font-weight:700;white-space:nowrap}
+.pill.streak.hot{border-color:var(--orange);color:var(--orange);animation:pulse 1s ease-in-out infinite}
+.iconbtn{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:5px 9px;font-size:.95rem}
+.iconbtn:hover{border-color:var(--accent)}
+#globalTimer{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--text2)}
+.xpwrap{max-width:980px;margin:0 auto;padding:0 16px 10px;display:flex;align-items:center;gap:12px}
+.xprank{font-size:.8rem;font-weight:700;white-space:nowrap;min-width:150px}
+.xptrack{flex:1;height:10px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);position:relative;overflow:visible}
+.xpfill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .6s ease}
+.xpmark{position:absolute;top:-3px;width:2px;height:14px;background:var(--text3);border-radius:2px}
+.xpnext{font-size:.72rem;color:var(--text2);white-space:nowrap;min-width:150px;text-align:right}
+.lvpips{display:flex;gap:5px}
+.lvpip{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;background:var(--bg2);border:1px solid var(--border);color:var(--text2)}
+.lvpip.done{background:var(--accent);color:#06281a;border-color:var(--accent)}
+.lvpip.cur{border-color:var(--gold);color:var(--gold)}
+.lvpip.locked{opacity:.4}
+
+main{max-width:980px;margin:0 auto;padding:22px 16px 80px}
+.screen.enter{animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== BOUTONS ===== */
+.btn{border:none;border-radius:12px;padding:12px 20px;font-weight:700;font-size:1rem;background:var(--accent);color:#062517;transition:transform .15s,opacity .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn.ghost:hover{border-color:var(--accent)}
+.btn.orange{background:var(--orange);color:#2b1200}
+.btn.gold{background:var(--gold);color:#2b2000}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btnrow.c{justify-content:center}
+.lbbtn{padding:10px 18px;border-radius:10px;font-weight:700;background:transparent;font-size:.9rem}
+.lbbtn.app{border:1px solid var(--accent);color:var(--accent)}
+.lbbtn.app:hover{background:var(--accent);color:#062517}
+.lbbtn.glob{border:1px solid var(--orange);color:var(--orange)}
+.lbbtn.glob:hover{background:var(--orange);color:#2b1200}
+
+/* ===== ACCUEIL ===== */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;margin-top:10px}
+.hero h1{font-size:2.6rem;line-height:1.08;font-weight:800;letter-spacing:-.5px}
+.hero h1 span{display:block;font-size:1.05rem;font-weight:600;color:var(--text2);letter-spacing:0;margin-top:10px}
+.hero p.lead{color:var(--text2);margin-top:14px;max-width:46ch}
+.counters{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.counter{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 12px;font-size:.85rem}
+.counter b{font-size:1.05rem}
+.who{margin-top:16px;font-size:.85rem;color:var(--text2)}
+.who b{color:var(--accent)}
+.mini-inv{background:var(--paper);color:var(--ink);border-radius:6px;padding:18px 18px 22px;transform:rotate(-3deg);box-shadow:0 30px 60px rgba(0,0,0,.5),0 0 0 1px rgba(0,0,0,.05);position:relative;max-width:340px;justify-self:center;width:100%}
+.mini-inv::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--orange);border-radius:6px 6px 0 0}
+.mini-inv .t{font-weight:800;font-size:1.3rem;letter-spacing:1px;margin-top:6px}
+.mini-inv .bar{height:7px;border-radius:4px;background:#e4e0d4;margin:7px 0}
+.mini-inv .row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--ink2);margin:6px 0}
+.mini-inv .q{font-family:'Space Mono',monospace;background:var(--fill);border-bottom:2px dotted #b9a64a;padding:0 10px;color:#8a7a2a;font-weight:700}
+.stamp{position:absolute;right:14px;top:22px;transform:rotate(-14deg);border:3px solid var(--error);color:var(--error);font-weight:800;padding:4px 10px;border-radius:6px;font-size:.85rem;opacity:.85;letter-spacing:.5px}
+
+/* ===== PARCOURS ===== */
+.sectitle{font-size:1.35rem;font-weight:800;margin:6px 0 14px}
+.path{position:relative;margin:10px 0 30px}
+.path::before{content:"";position:absolute;left:50%;top:10px;bottom:10px;border-left:3px dashed var(--border);transform:translateX(-50%)}
+.pstep{display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;margin:14px 0;position:relative}
+.node{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.1rem;background:var(--bg2);border:2px solid var(--border);justify-self:center;z-index:2}
+.node.done{background:var(--accent);border-color:var(--accent);color:#062517}
+.node.todo{border-color:var(--gold);color:var(--gold);animation:pulse 1.6s ease-in-out infinite}
+.node.locked{opacity:.5}
+.lvcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:left;color:var(--text);width:100%;transition:border-color .2s,transform .2s}
+.lvcard:not(:disabled):hover{border-color:var(--accent);transform:translateY(-2px)}
+.lvcard:disabled{opacity:.5;cursor:not-allowed}
+.lvcard .ic{font-size:1.5rem}
+.lvcard h3{font-size:1.02rem;margin:2px 0}
+.lvcard p{font-size:.82rem;color:var(--text2)}
+.lvcard .meta{font-size:.8rem;margin-top:6px;color:var(--gold);font-weight:700}
+.pstep.left .lvcard{grid-column:1}
+.pstep.right .lvcard{grid-column:3}
+.pstep .node{grid-column:2;grid-row:1}
+.trophies{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.badge{display:flex;gap:10px;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.badge .bi{font-size:1.6rem}
+.badge .bn{font-weight:700;font-size:.9rem}
+.badge .bc{font-size:.75rem;color:var(--text2)}
+.badge.off{opacity:.45;filter:grayscale(1)}
+.badge.on{border-color:var(--gold);box-shadow:0 0 0 1px rgba(255,201,77,.25) inset}
+
+/* ===== BRIEFING ===== */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px}
+.mhead{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mhead .ic{font-size:2rem}
+.mhead h2{font-size:1.4rem;line-height:1.2}
+.mhead .sub{font-size:.85rem;color:var(--text2)}
+.obj li{margin:5px 0 5px 20px}
+.h4{font-weight:800;font-size:.95rem;margin-bottom:8px;color:var(--accent)}
+.rappel p{margin:6px 0}
+.exbox{border-left:4px solid var(--orange);background:rgba(255,138,61,.08);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.92rem}
+.plusbox{border-left:4px solid var(--gold);background:rgba(255,201,77,.07);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.88rem;color:var(--text2)}
+.howbox{border-left:4px solid var(--blue);background:rgba(90,169,255,.08);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.9rem}
+.pred{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.pred button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 14px;font-weight:600}
+.pred button.sel{border-color:var(--gold);background:rgba(255,201,77,.12);color:var(--gold)}
+
+/* ===== QUESTION ===== */
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.qtop .mt{font-size:.9rem;color:var(--text2);font-weight:600}
+.qpips{display:flex;gap:6px}
+.qpip{width:14px;height:14px;border-radius:50%;background:var(--bg2);border:1px solid var(--border)}
+.qpip.g{background:var(--success);border-color:var(--success)}
+.qpip.o{background:var(--orange);border-color:var(--orange)}
+.qpip.r{background:var(--error);border-color:var(--error)}
+.qpip.cur{border:2px solid var(--gold);background:rgba(255,201,77,.25)}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px}
+.qcard.shake{animation:shake .45s ease}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.qlabel{font-size:.78rem;color:var(--text3);font-weight:600;margin-bottom:8px}
+.qtext{font-size:1.08rem;font-weight:600;margin:10px 0 12px}
+.data{display:block;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:.95rem;color:var(--text);margin:8px 0}
+.ansrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ans{background:var(--bg3);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:'Space Mono',monospace;font-size:1.05rem;padding:10px 12px;width:220px;max-width:100%}
+.ans:focus{border-color:var(--gold);outline:none}
+.ans.ok{border-color:var(--success)}
+.ans.ko{border-color:var(--error)}
+.preview{font-family:'Space Mono',monospace;font-size:.85rem;color:var(--gold);min-height:1.3em;margin-top:6px}
+.fb{margin-top:14px;border-radius:12px;padding:12px 14px;font-size:.93rem}
+.fb.ok{background:rgba(34,214,138,.1);border:1px solid rgba(34,214,138,.45)}
+.fb.mid{background:rgba(255,138,61,.1);border:1px solid rgba(255,138,61,.45)}
+.fb.ko{background:rgba(255,64,96,.1);border:1px solid rgba(255,64,96,.45)}
+.fb.hint{background:rgba(255,201,77,.08);border:1px solid rgba(255,201,77,.4)}
+.fb.info{background:rgba(90,169,255,.08);border:1px solid rgba(90,169,255,.4)}
+.fb .steps{margin-top:8px;font-family:'Space Mono',monospace;font-size:.8rem;line-height:1.7}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 14px;font-size:.95rem}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.sel{border-color:var(--gold);background:rgba(255,201,77,.1)}
+.opt.good{border-color:var(--success);background:rgba(34,214,138,.12)}
+.opt.bad{border-color:var(--error);background:rgba(255,64,96,.1);text-decoration:line-through}
+.opt.miss{border:2px dashed var(--success)}
+.opt:disabled{cursor:default}
+.vfrow{display:flex;gap:10px}
+.vfrow .opt{flex:1;text-align:center;font-weight:800;font-size:1.05rem}
+
+/* éléments : réserve, zones, emplacements */
+.reserve{display:flex;flex-wrap:wrap;gap:8px;min-height:52px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:var(--bg3);margin:10px 0}
+.reserve:empty::after{content:"Réserve vide";color:var(--text3);font-size:.8rem;align-self:center}
+.chip{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:8px 12px;font-size:.9rem;text-align:left}
+.chip:hover:not(:disabled){border-color:var(--accent)}
+.chip.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,201,77,.35)}
+.chip.g{border-color:var(--success);background:rgba(34,214,138,.14);cursor:default}
+.chip.o{border-color:var(--orange);background:rgba(255,138,61,.14);cursor:default}
+.chip.r{border-color:var(--error);background:rgba(255,64,96,.12);cursor:default}
+.chip .fix{display:block;font-size:.78rem;color:var(--gold);margin-top:2px}
+.bounce{animation:bounce .5s ease}
+@keyframes bounce{0%{transform:scale(.6)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+.zones{display:grid;gap:10px}
+.zones.z2{grid-template-columns:1fr 1fr}
+.zones.z3{grid-template-columns:repeat(3,1fr)}
+.zone{background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:10px;min-height:120px;text-align:left;color:var(--text);display:flex;flex-direction:column;gap:6px}
+.zone.target{border-color:var(--gold);border-style:dashed}
+.zone .zt{font-weight:800;font-size:.85rem;color:var(--text2);margin-bottom:4px}
+.slots{display:grid;gap:8px;margin:10px 0}
+.slot{display:flex;gap:10px;align-items:center;background:var(--bg2);border:2px solid var(--border);border-radius:12px;padding:8px 10px;text-align:left;color:var(--text);min-height:48px}
+.slot .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);font-weight:800;font-size:.85rem;flex:none}
+.slot.target{border-color:var(--gold);border-style:dashed}
+.slot.g{border-color:var(--success)} .slot.o{border-color:var(--orange)} .slot.r{border-color:var(--error)}
+.slot .ph{color:var(--text3);font-size:.85rem}
+.slot .fix{display:block;font-size:.78rem;color:var(--gold)}
+.pairs{display:grid;gap:10px}
+.pairrow{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;align-items:center;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.pairrow select{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px;font-family:'Space Mono',monospace;font-size:.85rem;width:100%}
+.pairrow .lk{font-family:'Space Mono',monospace;font-size:.85rem;padding:6px 8px;border-radius:8px}
+.pairrow.g{border-color:var(--success)} .pairrow.o{border-color:var(--orange)} .pairrow.r{border-color:var(--error)}
+.trous{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;line-height:2.3;font-size:.98rem}
+.blank{display:inline-block;min-width:110px;border:none;border-bottom:2px dashed var(--gold);background:rgba(255,201,77,.08);color:var(--text);padding:0 8px;border-radius:6px 6px 0 0;font-size:.95rem;line-height:1.6}
+.blank.target{background:rgba(255,201,77,.22)}
+.blank.g{border-bottom:2px solid var(--success);background:rgba(34,214,138,.14)}
+.blank.o{border-bottom:2px solid var(--orange);background:rgba(255,138,61,.14)}
+.blank.r{border-bottom:2px solid var(--error);background:rgba(255,64,96,.12)}
+.blank .fix{color:var(--gold);font-size:.8rem}
+.sents{display:grid;gap:8px;margin-top:12px}
+.sent{text-align:left;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 12px;font-size:.93rem;display:flex;gap:10px}
+.sent .mk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--text3);display:grid;place-items:center;font-size:.75rem}
+.sent.flag{border-color:var(--error)} .sent.flag .mk{border-color:var(--error);background:var(--error);color:#fff}
+.sent.g{border-color:var(--success);background:rgba(34,214,138,.1)} .sent.o{border-color:var(--orange);background:rgba(255,138,61,.1)}
+.sent.r{border-color:var(--error);background:rgba(255,64,96,.08)} .sent.v{opacity:.7;border-style:dashed}
+.sent .fix{display:block;color:var(--gold);font-size:.82rem;margin-top:4px}
+.sent:disabled{cursor:default}
+
+/* ===== DOCUMENT : LA FACTURE ===== */
+.paper-wrap{overflow-x:auto;margin:12px -4px;padding:6px 4px 14px}
+.paper{background:var(--paper);color:var(--ink);border-radius:6px;box-shadow:0 22px 50px rgba(0,0,0,.5);position:relative;padding:22px 24px 18px;min-width:560px;font-size:.86rem}
+.paper::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:var(--vc,#334);border-radius:6px 6px 0 0}
+.pp-top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.pp-vendor{display:flex;gap:10px;align-items:flex-start}
+.pp-logo{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:1.4rem;background:color-mix(in srgb,var(--vc,#334) 18%,white);flex:none}
+.pp-vname{font-weight:800;font-size:1.02rem}
+.pp-small{font-size:.74rem;color:var(--ink2);line-height:1.4}
+.pp-kind{text-align:right}
+.pp-title{font-weight:800;font-size:1.35rem;letter-spacing:1.5px;color:var(--vc,#334)}
+.pp-meta{margin-left:auto;font-size:.74rem;border-collapse:collapse}
+.pp-meta td{padding:1px 0 1px 10px;color:var(--ink2)} .pp-meta td+td{color:var(--ink);font-weight:600;text-align:right}
+.pp-mid{display:flex;justify-content:space-between;gap:16px;margin-top:14px;align-items:flex-end}
+.pp-client{border:1px solid var(--rule);border-radius:6px;padding:8px 12px;font-size:.8rem;min-width:46%;margin-left:auto}
+.pp-lbl{font-size:.68rem;color:var(--ink2);font-weight:700}
+.pp-cond{font-size:.78rem;background:#f1eee5;border-radius:6px;padding:7px 10px;margin-top:12px;color:var(--ink)}
+table.inv{width:100%;border-collapse:collapse;margin-top:12px}
+table.inv th{font-size:.7rem;color:var(--ink2);font-weight:700;text-align:right;border-bottom:2px solid var(--ink);padding:5px 6px}
+table.inv th.l,table.inv td.l{text-align:left}
+table.inv td{border-bottom:1px solid var(--rule);padding:6px;text-align:right;font-family:'Space Mono',monospace;font-size:.8rem;vertical-align:middle;white-space:nowrap}
+table.inv td.l{white-space:normal}
+table.inv td.l{font-family:'Outfit',sans-serif;font-size:.84rem}
+.pp-sub{font-size:.74rem;font-weight:700;color:var(--ink2);margin-top:12px}
+.pp-bottom{display:flex;justify-content:flex-end;margin-top:12px}
+table.recap{border-collapse:collapse;min-width:58%}
+table.recap td{padding:5px 8px;border-bottom:1px solid var(--rule);font-size:.82rem}
+table.recap td:not(:first-child){text-align:right;font-family:'Space Mono',monospace;font-size:.8rem}
+table.recap th{font-size:.7rem;color:var(--ink2);text-align:right;padding:4px 8px;border-bottom:2px solid var(--ink)}
+table.recap tr.tot td{border-top:2px solid var(--ink);border-bottom:none;font-weight:800;font-size:.9rem;padding-top:8px}
+.pp-foot{margin-top:14px;padding-top:8px;border-top:1px dashed var(--rule);font-size:.7rem;color:var(--ink2);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fld{width:7.6em;font-family:'Space Mono',monospace;font-size:.82rem;text-align:right;border:none;border-bottom:2px dotted #b9a64a;background:var(--fill);color:var(--ink);padding:3px 6px;border-radius:4px 4px 0 0}
+.fld:focus{outline:2px solid var(--orange);outline-offset:1px;background:#fff9dc}
+.fld.bad{border-bottom:2px solid var(--error);background:#ffe3e8}
+span.fld{display:inline-block}
+span.fld.g{background:#dff6ea;border-bottom:2px solid #13a868;color:#0b5e3b;font-weight:700}
+span.fld.o{background:#ffeadb;border-bottom:2px solid #e56f1e;color:#8a3a06;font-weight:700}
+span.fld.r{background:#ffe1e6;border-bottom:2px solid #e02a4a;color:#8f1028;font-weight:700;width:auto;min-width:7.6em}
+span.fld.r s{color:#a55;font-weight:400;margin-right:4px}
+.calcbar{margin-top:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-family:'Space Mono',monospace;font-size:.8rem;color:var(--text2)}
+.calcbar b{color:var(--gold)}
+
+/* ===== BILANS ===== */
+.medal{font-size:3.4rem;text-align:center}
+.grade{text-align:center;font-weight:800;font-size:1.3rem}
+.stars{text-align:center;color:var(--gold);font-size:1.4rem;letter-spacing:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:.82rem;color:var(--text2);margin:10px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+table.res{width:100%;border-collapse:collapse;margin-top:10px;font-size:.88rem}
+table.res th{text-align:left;color:var(--text2);font-size:.75rem;padding:6px;border-bottom:1px solid var(--border)}
+table.res td{padding:7px 6px;border-bottom:1px solid rgba(255,255,255,.05)}
+table.res td.n{text-align:center}
+.predline{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--bg2);font-size:.9rem}
+.crit{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-top:10px}
+.crit h4{font-size:.98rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.st{font-size:.78rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.st.atteint{background:rgba(34,214,138,.15);color:var(--success)}
+.st.encours{background:rgba(255,138,61,.15);color:var(--orange)}
+.st.nonatteint{background:rgba(255,64,96,.15);color:var(--error)}
+.ind{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px dashed var(--border);font-size:.88rem;margin-top:6px}
+.rev{font-size:.83rem;color:var(--gold);margin:2px 0 4px}
+.final{border:1px solid var(--gold);box-shadow:0 0 0 1px rgba(255,201,77,.15) inset}
+
+/* ===== EFFETS ===== */
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,77,.0)}50%{box-shadow:0 0 0 6px rgba(255,201,77,.18)}}
+.particle{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:9000;animation:part .8s ease-out forwards}
+@keyframes part{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.floatxp{position:fixed;z-index:9001;pointer-events:none;font-weight:800;color:var(--gold);font-size:1.1rem;animation:floatup 1.1s ease-out forwards;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+@keyframes floatup{to{transform:translateY(-60px);opacity:0}}
+.combo{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:9002;pointer-events:none;font-weight:800;font-size:2.2rem;color:var(--orange);text-shadow:0 4px 20px rgba(255,138,61,.6);animation:combo 1.1s ease-out forwards;white-space:nowrap}
+@keyframes combo{0%{transform:translate(-50%,-50%) scale(.4);opacity:0}25%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-70%) scale(1);opacity:0}}
+.confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:9003;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg)}}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(140%);opacity:0;visibility:hidden;pointer-events:none;z-index:9500;background:var(--card2);border:1px solid var(--gold);border-radius:14px;padding:12px 18px;display:flex;gap:12px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .35s ease,opacity .35s ease,visibility .35s;max-width:92vw}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible}
+#toast .ti{font-size:1.8rem}
+#rankOv{position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center}
+#rankOv.show{display:flex}
+.rays{position:absolute;width:520px;height:520px;background:repeating-conic-gradient(rgba(255,201,77,.18) 0 10deg,transparent 10deg 20deg);border-radius:50%;animation:spin 12s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rankcard{position:relative;background:var(--card);border:2px solid var(--gold);border-radius:20px;padding:28px 34px;text-align:center;animation:pop .5s ease;max-width:90vw}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.rankcard .ri{font-size:4rem}
+.rankcard h3{font-size:1.5rem;margin:6px 0}
+
+/* ===== MODALS (tracking) ===== */
+.ovl{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px)}
+.mbox{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 40px rgba(0,0,0,0.5);animation:slideup .35s ease}
+@keyframes slideup{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width:768px){
+  .hero{grid-template-columns:1fr}
+  .hero h1{font-size:2rem}
+  .zones.z3{grid-template-columns:1fr}
+  .xprank,.xpnext{min-width:auto}
+}
+@media (max-width:640px){
+  .paper{min-width:0;padding:18px 12px 14px;font-size:.8rem}
+  .pp-top{flex-direction:column;gap:10px}
+  .pp-kind{text-align:left;width:100%}
+  .pp-meta{margin-left:0}
+  .pp-meta td{padding:1px 10px 1px 0}
+  .pp-client{min-width:0;width:100%}
+  table.inv th,table.inv td{padding:5px 3px;font-size:.7rem}
+  table.inv td.l{font-size:.74rem}
+  table.recap{min-width:0;width:100%}
+  table.recap td{padding:5px 4px;font-size:.74rem}
+  .fld{width:6.3em;font-size:.72rem;padding:3px 4px}
+  span.fld.r{min-width:6.3em}
+  .paper-wrap{margin:12px -8px}
+}
+@media (max-width:480px){
+  .apptitle{display:none}
+  .pill{padding:4px 7px;font-size:.74rem}
+  .lvpip{width:20px;height:20px}
+  .xpnext{display:none}
+  .lvpips{display:none}
+  .zones.z2{grid-template-columns:1fr}
+  .pairrow{grid-template-columns:1fr}
+  .path::before{left:24px}
+  .pstep{grid-template-columns:48px 1fr;gap:10px}
+  .pstep .node{grid-column:1}
+  .pstep.left .lvcard,.pstep.right .lvcard{grid-column:2}
+  .qcard,.panel{padding:16px}
+  .mini-inv{transform:rotate(-2deg)}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+@media print{
+  body *{visibility:hidden}
+  .fiche,.fiche *{visibility:visible}
+  .fiche{position:absolute;left:0;top:0;width:100%;background:#fff !important;color:#000 !important;border:none !important;box-shadow:none !important}
+  .fiche *{color:#000 !important;background:transparent !important;box-shadow:none !important;border-color:#999 !important}
+  .noprint{display:none !important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hud">
+    <span class="logo">🧾</span>
+    <div class="apptitle">La facture — Partie 2<small>Économie d'entreprise · 3e-4e TQ</small></div>
+    <span class="sp"></span>
+    <span id="globalTimer" style="display:none;">⏱️ 00:00</span>
+    <span class="pill streak" id="hudStreak" title="Série de bonnes réponses du premier coup">🔥 0</span>
+    <span class="pill" id="hudXP" title="Points d'expérience">⭐ 0 XP</span>
+    <div class="lvpips" id="hudLv" aria-label="Progression des missions"></div>
+    <button class="iconbtn" id="btnSound" onclick="toggleSound()" title="Activer ou couper le son" aria-label="Son">🔇</button>
+    <button class="iconbtn" onclick="goHub()" title="Parcours" aria-label="Parcours">🗺️</button>
+  </div>
+  <div class="xpwrap">
+    <div class="xprank" id="xpRank">🎒 Stagiaire</div>
+    <div class="xptrack" id="xpTrack"><div class="xpfill" id="xpFill" style="width:0%"></div></div>
+    <div class="xpnext" id="xpNext"></div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<div id="toast" role="status" aria-live="polite"><span class="ti" id="toastIcon">🏅</span><div><div style="font-size:.75rem;color:var(--gold);font-weight:700">Badge débloqué</div><div id="toastText" style="font-weight:700"></div></div></div>
+
+<div id="rankOv" onclick="if(event.target===this)closeRank()">
+  <div class="rays"></div>
+  <div class="rankcard">
+    <div style="font-size:.85rem;color:var(--gold);font-weight:700">Montée en grade !</div>
+    <div class="ri" id="rankIcon">🧾</div>
+    <h3 id="rankName">Aide-facturier</h3>
+    <p style="color:var(--text2);font-size:.9rem;max-width:32ch;margin:0 auto" id="rankMsg"></p>
+    <button class="btn gold" style="margin-top:16px" onclick="closeRank()">Continuer</button>
+  </div>
+</div>
+
+<!-- ===== MODAL EMAIL ===== -->
+<div id="emailOverlay" class="ovl" style="display:none;align-items:center;justify-content:center;">
+  <div class="mbox">
+    <div style="font-size:2rem;margin-bottom:12px;">🎓</div>
+    <h2 style="font-size:1.3rem;margin-bottom:4px;">Identification</h2>
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:20px;">Entre ton adresse email scolaire pour commencer.</p>
+    <input type="email" id="emailInput" placeholder="prenom.nom@istlm.org" autocomplete="email"
+      style="width:100%;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;outline:none;margin-bottom:12px;font-family:inherit;"
+      onkeydown="if(event.key==='Enter')validateEmail()">
+    <div id="emailError" style="color:#ff4060;font-size:0.82rem;margin-bottom:12px;min-height:1.2em;"></div>
+    <button id="emailBtn" onclick="validateEmail()"
+      style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:#0f1117;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s;">
+      ✅ Vérifier et commencer
+    </button>
+  </div>
+</div>
+
+<!-- ===== MODAL CLASSEMENT ===== -->
+<div id="lbOverlay" class="ovl" style="display:none;" onclick="if(event.target===this)closeLB()">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:95%;max-width:600px;max-height:85vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.5);">
+    <button onclick="closeLB()" aria-label="Fermer" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text2);font-size:1.5rem;cursor:pointer;">✕</button>
+    <h3 id="lbTitle" style="font-size:1.05rem;margin:0 30px 14px 0;"></h3>
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button id="lbTabApp" onclick="switchLBTab('app')" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#0f1117;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;">🏆 Cette application</button>
+      <button id="lbTabGlobal" onclick="switchLBTab('global')" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--orange);background:transparent;color:var(--orange);font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;">🌍 Classement général</button>
+    </div>
+    <div id="lbContent"><div style="text-align:center;padding:40px;color:var(--text2);">Chargement…</div></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   OUTILS
+   ============================================================ */
+const NB = '\u202f';
+function fmt(n){
+  const neg = n < 0; const s = Math.abs(n).toFixed(2).split('.');
+  s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, NB);
+  return (neg ? '−' : '') + s[0] + ',' + s[1];
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function evalExpr(s){
+  let e = String(s).replace(/\s|\u00a0|\u202f|€/g,'').replace(/[×xX]/g,'*').replace(/÷|:/g,'/').replace(/,/g,'.');
+  if (!/^[0-9+\-*/().]+$/.test(e) || !/[+\-*/]/.test(e.slice(1))) return null;
+  try { const r = Function('"use strict";return (' + e + ')')(); return (typeof r === 'number' && isFinite(r)) ? r : null; }
+  catch(err){ return null; }
+}
+function parseNum(s){
+  const r = evalExpr(s); if (r !== null) return r;
+  let t = String(s).replace(/\s|\u00a0|\u202f|€/g,'');
+  if (t === '') return NaN;
+  if (t.includes(',')) t = t.replace(/\./g,'').replace(',', '.');
+  else if ((t.match(/\./g)||[]).length > 1) t = t.replace(/\./g,'');
+  if (!/^-?[0-9]*\.?[0-9]+$/.test(t)) return NaN;
+  return parseFloat(t);
+}
+function prettyExpr(s){ return esc(String(s).replace(/\*/g,' × ').replace(/\//g,' ÷ ').replace(/\s+/g,' ').trim()); }
+function near(v, a){ return isFinite(v) && Math.abs(v - a) <= 0.02 + 1e-9; }
+function shuffled(n, seed){
+  const a = [...Array(n).keys()]; let s = seed;
+  for (let i = n-1; i > 0; i--){ s = (s*9301 + 49297) % 233280; const j = Math.floor(s/233280*(i+1)); [a[i],a[j]] = [a[j],a[i]]; }
+  return a;
+}
+function F(id, ans, label, hint, expl){ return { id, ans, label, hint, expl }; }
+
+/* ============================================================
+   CRITÈRES ET INDICATEURS (§4.11)
+   ============================================================ */
+const CRITERES = [
+  { id:'C1', nom:"Calculer avec les pourcentages de la facture", indicateurs:[
+    { id:'I1', texte:"Je calcule une réduction ou une TVA, et je passe du prix HTVA au prix TVAC (et inversement)",
+      obj:"calculer une réduction ou une TVA, et passer du prix HTVA au prix TVAC dans les deux sens",
+      chapitre:"Formules à mémoriser", revoir:"les quatre formules de la TVA et la façon de calculer un pourcentage d'un montant" } ]},
+  { id:'C2', nom:"Respecter l'ordre de calcul d'une facture", indicateurs:[
+    { id:'I2', texte:"Je place chaque élément de la facture avant ou après le calcul de la TVA",
+      obj:"placer chaque élément de la facture avant ou après le calcul de la TVA",
+      chapitre:"L'essentiel à retenir", revoir:"les points sur les réductions, les frais de port et les emballages : lesquels se placent avant la TVA, lesquels après" },
+    { id:'I3', texte:"J'enchaîne les réductions, chacune calculée sur le montant qui reste",
+      obj:"enchaîner plusieurs réductions en calculant chacune sur le montant qui reste",
+      chapitre:"Ce qu'il faut retenir", revoir:"l'ordre précis du calcul : chaque réduction se calcule sur le montant qui reste après la précédente" } ]},
+  { id:'C3', nom:"Compléter et rectifier une facture", indicateurs:[
+    { id:'I4', texte:"Je complète une facture à un seul taux de TVA",
+      obj:"compléter une facture à un seul taux de TVA, réductions et frais compris",
+      chapitre:"Exercices pratiques", revoir:"les corrigés des factures à un seul taux : prix brut, réductions, base imposable, TVA et total" },
+    { id:'I5', texte:"Je complète une facture à plusieurs taux de TVA",
+      obj:"compléter une facture à plusieurs taux de TVA",
+      chapitre:"Exercices pratiques", revoir:"les corrigés des factures à plusieurs taux : une base et une TVA par taux, le port au taux le plus bas" },
+    { id:'I6', texte:"Je choisis et je calcule le bon document rectificatif",
+      obj:"choisir entre note de crédit et facture complémentaire, et calculer une note de crédit",
+      chapitre:"Documents rectificatifs de la facture", revoir:"quand établir une note de crédit ou une facture complémentaire, et comment calculer une note de crédit" } ]}
+];
+const IND = {}; CRITERES.forEach(c => c.indicateurs.forEach(i => IND[i.id] = i));
+
+/* ============================================================
+   CONTENU — LES 4 MISSIONS
+   ============================================================ */
+const LEVELS = [
+/* ---------------- MISSION 1 ---------------- */
+{ icon:'🔢', title:"Échauffement : pourcentages et ordre de calcul", short:"Pourcentages, TVA et ordre des opérations",
+  trackName:"Mission 1 — Échauffement : pourcentages et ordre de calcul",
+  brief:{
+    rappel:[
+      "Calculer <b>x %</b> d'un montant : <b>montant × x ÷ 100</b>.",
+      "Le prix <b>TVAC</b> (TVA comprise) vaut 100 % du prix <b>HTVA</b> (hors TVA) <b>plus</b> le taux : à 6 %, il vaut 106 % du HTVA.",
+      "Pour revenir au HTVA, on fait le chemin inverse : on divise par (100 + taux) et on multiplie par 100.",
+      "Une facture se calcule toujours dans le même ordre, de la marchandise vers le total à payer. Pour chaque élément, demande-toi : le client le paie-t-il vraiment, ou le rendra-t-il plus tard ?"
+    ],
+    exemple:"Un livre à <b>30,00 € HTVA</b>, TVA 6 % : TVA = 30,00 × 6 ÷ 100 = 1,80 € → prix TVAC = 31,80 €.<br>Retour au HTVA : 31,80 × 100 ÷ 106 = 30,00 €.",
+    plus:"Calcul mental : 10 % d'un montant, c'est déplacer la virgule d'un rang vers la gauche (10 % de 470 € = 47 €) ; 1 %, c'est la déplacer de deux rangs (4,70 €)."
+  },
+  questions:[
+    { type:'reponse', ind:'I1', pts:6,
+      data:"<b>Cycles du Haut-Pays SRL</b> (Dour) accorde une remise de <b>15 %</b> sur un vélo électrique vendu <b>1 840,00 € HTVA</b>.",
+      q:"Calcule le montant de la remise.", ans:276, unit:'€',
+      hint:"Une remise de 15 %, c'est 15 € retirés sur chaque tranche de 100 €. Quel calcul fais-tu avec 1 840 et 15 ?",
+      expl:"Remise = 1 840,00 × 15 ÷ 100 = <b>276,00 €</b>. Le vélo coûte donc 1 564,00 € HTVA après remise." },
+    { type:'appariement', ind:'I1', pts:8,
+      q:"Associe chaque situation au calcul qui donne la réponse.",
+      pairs:[
+        { l:"TVA à 21 % sur un montant HTVA de 360,00 €", r:"360 × 21 ÷ 100" },
+        { l:"Prix TVAC d'un article à 360,00 € HTVA (TVA 12 %)", r:"360 × 112 ÷ 100" },
+        { l:"Prix HTVA d'un article payé 363,00 € TVAC (TVA 21 %)", r:"363 × 100 ÷ 121" },
+        { l:"Taux de TVA d'un article à 360,00 € HTVA dont la TVA vaut 21,60 €", r:"21,60 × 100 ÷ 360" } ],
+      distract:["363 × 21 ÷ 100","360 × 100 ÷ 112"],
+      hint:"Pour chaque situation, demande-toi d'abord si tu pars du prix HTVA ou du prix TVAC, et ce que tu cherches.",
+      expl:"TVA = HTVA × taux ÷ 100 · TVAC = HTVA × (100 + taux) ÷ 100 · HTVA = TVAC × 100 ÷ (100 + taux) · Taux = TVA × 100 ÷ HTVA. Les calculs « 363 × 21 ÷ 100 » et « 360 × 100 ÷ 112 » ne répondent à aucune de ces situations." },
+    { type:'reponse', ind:'I1', pts:6,
+      data:"Sur le site de <b>Bureau Mons Équipement</b>, une imprimante laser est affichée <b>254,10 € TVAC</b> (TVA 21 %).",
+      q:"Quel est son prix HTVA ?", ans:210, unit:'€',
+      hint:"Le prix TVAC représente 121 % du prix HTVA. Pour revenir à 100 %, par quoi divises-tu, et par quoi multiplies-tu ?",
+      expl:"HTVA = 254,10 × 100 ÷ 121 = <b>210,00 €</b>. Vérification : 210,00 + 21 % (44,10 €) = 254,10 €. Retirer 21 % de 254,10 € donnerait 200,74 €, ce qui est faux : la TVA se calcule sur le HTVA, pas sur le TVAC." },
+    { type:'classement', ind:'I2', pts:16,
+      q:"Range chaque élément d'une facture dans la bonne zone. Clique sur une étiquette, puis sur sa zone.",
+      zones:["Se retranche avant la TVA","S'ajoute avant la TVA","S'ajoute après la TVA"],
+      items:[ {t:"Rabais",z:0},{t:"Remise",z:0},{t:"Ristourne",z:0},{t:"Escompte",z:0},
+              {t:"Frais de port",z:1},{t:"Emballage perdu (non repris)",z:1},{t:"Bacs consignés",z:2},{t:"Fût consigné",z:2} ],
+      hint:"Pour chaque élément, pose-toi deux questions : fait-il baisser ou monter le montant ? Le client le garde-t-il, ou le rendra-t-il ?",
+      expl:"Les quatre réductions (rabais, remise, ristourne, escompte) se retranchent avant la TVA. Le port et l'emballage perdu s'ajoutent avant la TVA : ils sont taxés. Les emballages consignés s'ajoutent après la TVA : le client les rendra, on ne les taxe pas." },
+    { type:'vf', ind:'I3', pts:4,
+      data:"<b>Électro Borinage SRL</b> accorde à un client un rabais de <b>10 %</b>, puis une remise de <b>5 %</b>.",
+      q:"Vrai ou faux ? Le client obtient exactement 15 % de réduction sur le prix brut.", ans:false,
+      expl:"La remise se calcule sur ce qui reste après le rabais. Sur 200,00 € : rabais 20,00 € → 180,00 € ; remise 5 % de 180,00 € = 9,00 € → 171,00 €. Réduction totale : 29,00 €, soit 14,5 % et non 15 %." },
+    { type:'ordre', ind:'I2', pts:12,
+      q:"Remets les étapes du calcul d'une facture dans l'ordre. Clique sur une étiquette, puis sur son emplacement. Toutes les étiquettes ne serviront pas.",
+      steps:[ "Calculer chaque ligne (quantité × prix unitaire) et les additionner : le prix brut",
+              "Retrancher le rabais, puis la remise",
+              "Retrancher l'escompte",
+              "Ajouter les frais de port : on obtient la base imposable",
+              "Calculer la TVA sur la base imposable et l'ajouter",
+              "Ajouter les emballages consignés : on obtient le total à payer" ],
+      distract:[ "Calculer la TVA sur les emballages consignés", "Retrancher l'escompte du total TVA comprise" ],
+      hint:"Commence par ce qui crée le montant de départ, et termine par ce que le client récupérera plus tard. Les réductions commerciales passent avant la réduction pour paiement rapide.",
+      expl:"Prix brut → rabais puis remise → escompte → + frais de port = base imposable → + TVA → + emballages consignés = total à payer. On ne calcule jamais de TVA sur les consignes, et l'escompte se retire avant la TVA." }
+  ]},
+/* ---------------- MISSION 2 ---------------- */
+{ icon:'🧾', title:"Mes premières factures", short:"Une facture à 21 %, une facture à 6 %",
+  trackName:"Mission 2 — Mes premières factures",
+  brief:{
+    rappel:[
+      "Chaque ligne : <b>quantité × prix unitaire</b>. Le <b>total brut</b> est la somme des lignes.",
+      "Les réductions se retirent du total brut : on obtient le montant HTVA, aussi appelé <b>base imposable</b>.",
+      "La <b>TVA</b> se calcule sur la base imposable ; ensuite, base + TVA = <b>total à payer</b>.",
+      "<b>Arrondis au cent</b> à chaque étape (à partir de 0,005, on arrondit au cent supérieur).",
+      "<b>Franco de port</b> : le transport est compris dans le prix, aucun frais n'est ajouté."
+    ],
+    exemple:"3 lampes de bureau × 40,00 € = 120,00 € · remise 5 % : 120,00 × 5 ÷ 100 = 6,00 € · HTVA : 114,00 € · TVA 21 % : 23,94 € · total : 137,94 €.",
+    how:"Dans une facture à compléter, tape tes réponses dans les <b>cases jaunes</b>. Tu peux écrire un calcul (par exemple <span class='mono'>12*4,5</span>) : le résultat s'affiche sous la facture avant que tu vérifies. Les cases justes se verrouillent en vert ; tu as droit à une deuxième vérification pour corriger les autres.",
+    plus:"En Belgique, le numéro de TVA d'une entreprise est son numéro BCE (Banque-Carrefour des Entreprises) précédé de « BE » : BCE 0xxx.xxx.xxx → TVA BE 0xxx.xxx.xxx."
+  },
+  questions:[
+    { type:'facture', ind:'I4', pts:16,
+      q:"<b>Imprim'Sport SRL</b> facture des tenues au club de basket de Jemappes. Complète la facture.",
+      doc:{ kind:'FACTURE',
+        vendor:{ name:"Imprim'Sport SRL", logo:'🏀', color:'#e2621b', addr:["Rue de la Station 48","7330 Saint-Ghislain","065 78 21 40"], bce:'0748.123.683', iban:'BE90 0682 4719 5332' },
+        client:{ name:"Basket Club Jemappes ASBL", addr:["Avenue Roi Albert 112","7012 Jemappes"], tva:'BE 0792.345.191' },
+        meta:[["Facture n°","2026-0412"],["Date","28/09/2026"],["Échéance","28/10/2026"],["Votre commande","n° 087 du 15/09/2026"]],
+        cond:"Remise : 8 % · Livraison franco de port · TVA 21 %",
+        lines:[
+          { d:"Maillot de basket imprimé (nom + numéro)", q:15, pu:28.00, t:F('a1',420,"Ligne « Maillot »","Combien coûtent 15 maillots à 28,00 € pièce ?","15 × 28,00 = 420,00") },
+          { d:"Short de basket", q:15, pu:16.50, t:F('a2',247.5,"Ligne « Short »","Multiplie la quantité de shorts par leur prix unitaire.","15 × 16,50 = 247,50") },
+          { d:"Sac à ballons (10 ballons)", q:2, pu:34.90, t:F('a3',69.8,"Ligne « Sac à ballons »","Multiplie la quantité par le prix unitaire.","2 × 34,90 = 69,80") } ],
+        recap:[
+          { label:"Total brut", f:F('a4',737.3,"Total brut","Additionne les montants des trois lignes.","420,00 + 247,50 + 69,80 = 737,30") },
+          { label:"− Remise 8 %", f:F('a5',58.98,"Remise","La remise est de 8 % : de quel montant dois-tu calculer 8 % ?","737,30 × 8 ÷ 100 = 58,98 (58,984 arrondi)") },
+          { label:"= Montant HTVA", f:F('a6',678.32,"Montant HTVA","Que reste-t-il du total brut une fois la remise retirée ?","737,30 − 58,98 = 678,32") },
+          { label:"+ TVA 21 %", f:F('a7',142.45,"TVA 21 %","Sur quel montant se calcule la TVA : le total brut ou le montant après remise ?","678,32 × 21 ÷ 100 = 142,45 (142,4472 arrondi)") },
+          { label:"= Total à payer", tot:true, f:F('a8',820.77,"Total à payer","Le client paie le montant HTVA et la TVA. Que dois-tu additionner ?","678,32 + 142,45 = 820,77") } ],
+        foot:"Paiement à 30 jours" } },
+    { type:'qcm', ind:'I3', pts:6,
+      data:"La <b>Quincaillerie Delvaux SRL</b> (Boussu) facture une commande de <b>2 400,00 €</b> (prix brut). Elle accorde un <b>rabais de 5 %</b> pour des rayures sur la marchandise, puis une <b>remise de 10 %</b>.",
+      q:"Sur quel montant calcule-t-on la remise de 10 % ?",
+      options:["2 280,00 €, le montant qui reste après le rabais","2 400,00 €, le prix brut de la commande","2 160,00 €, le prix brut moins la remise","2 520,00 €, le prix brut plus le rabais"], correct:0,
+      hint:"Le rabais a déjà été retiré. La remise s'applique-t-elle à ce que le client devait au départ, ou à ce qu'il doit encore ?",
+      expl:"Rabais : 2 400,00 × 5 ÷ 100 = 120,00 € → il reste 2 280,00 €. La remise se calcule sur ce montant : 2 280,00 × 10 ÷ 100 = 228,00 € → 2 052,00 €." },
+    { type:'facture', ind:'I4', pts:20,
+      q:"La <b>Librairie Scolaire Montoise SRL</b> livre des livres au Collège des Tilleuls, avec un peu de retard. Complète la facture.",
+      doc:{ kind:'FACTURE',
+        vendor:{ name:"Librairie Scolaire Montoise SRL", logo:'📚', color:'#2f6fd0', addr:["Rue de Nimy 27","7000 Mons","065 31 47 02"], bce:'0801.456.263', iban:'BE89 3631 8420 7585' },
+        client:{ name:"Collège des Tilleuls ASBL", addr:["Rue des Écoles 5","7300 Boussu"], tva:'BE 0765.789.462' },
+        meta:[["Facture n°","F26-1187"],["Date","24/09/2026"],["Échéance","24/10/2026"],["Bon de commande","n° CT-2026-14"]],
+        cond:"Rabais : 4 % (livraison en retard) · Remise : 5 % · Frais de port : 14,00 € HTVA · Livres : TVA 6 %",
+        lines:[
+          { d:"Dictionnaire de français, édition scolaire", q:24, pu:19.90, t:F('b1',477.6,"Ligne « Dictionnaire »","Combien coûtent 24 dictionnaires à 19,90 € ?","24 × 19,90 = 477,60") },
+          { d:"Atlas géographique de Belgique et du monde", q:24, pu:16.50, t:F('b2',396,"Ligne « Atlas »","Multiplie la quantité d'atlas par leur prix unitaire.","24 × 16,50 = 396,00") } ],
+        recap:[
+          { label:"Total brut", f:F('b3',873.6,"Total brut","Additionne les deux lignes.","477,60 + 396,00 = 873,60") },
+          { label:"− Rabais 4 %", f:F('b4',34.94,"Rabais","Le rabais de 4 % est la première réduction : sur quel montant se calcule-t-il ?","873,60 × 4 ÷ 100 = 34,94 (34,944 arrondi)") },
+          { label:"= Montant après rabais", f:F('b5',838.66,"Montant après rabais","Retire le rabais du total brut.","873,60 − 34,94 = 838,66") },
+          { label:"− Remise 5 %", f:F('b6',41.93,"Remise","Après un rabais, sur quel montant calcules-tu la remise de 5 % ?","838,66 × 5 ÷ 100 = 41,93 (41,933 arrondi)") },
+          { label:"= Montant net", f:F('b7',796.73,"Montant net","Retire la remise du montant après rabais.","838,66 − 41,93 = 796,73") },
+          { label:"+ Frais de port", v:14 },
+          { label:"= Base imposable (HTVA)", f:F('b8',810.73,"Base imposable","Les frais de port font partie de ce que le client paie. Faut-il les ajouter avant de calculer la TVA ?","796,73 + 14,00 = 810,73") },
+          { label:"+ TVA 6 %", f:F('b9',48.64,"TVA 6 %","Les livres sont taxés à 6 %. Sur quel montant calcules-tu ces 6 % ?","810,73 × 6 ÷ 100 = 48,64 (48,6438 arrondi)") },
+          { label:"= Total à payer", tot:true, f:F('b10',859.37,"Total à payer","Additionne la base imposable et la TVA.","810,73 + 48,64 = 859,37") } ],
+        foot:"Paiement à 30 jours" } },
+    { type:'vf', ind:'I2', pts:4,
+      data:"Une pépinière facture 600,00 € de plantes et 25,00 € de frais de livraison.",
+      q:"Vrai ou faux ? Sur une facture, les frais de port s'ajoutent après le calcul de la TVA : ils ne sont donc pas taxés.", ans:false,
+      expl:"Le port fait partie de ce que le client paie pour être livré : il s'ajoute avant la TVA et il est taxé. Ici, la TVA se calcule sur 625,00 €. Seuls les emballages consignés s'ajoutent après la TVA." }
+  ]},
+/* ---------------- MISSION 3 ---------------- */
+{ icon:'📦', title:"Escompte, emballages et deux taux", short:"Escompte, consignes, factures à deux taux",
+  trackName:"Mission 3 — Escompte, emballages et deux taux",
+  brief:{
+    rappel:[
+      "L'<b>escompte</b> récompense le client qui paie vite, par exemple dans les 8 jours.",
+      "Un <b>emballage consigné</b> (bac, fût, palette) est seulement prêté : le client le rapportera.",
+      "Facture à <b>plusieurs taux</b> : regroupe les montants par taux de TVA. Le <b>port</b> et l'<b>emballage perdu</b> vont dans le groupe du <b>taux le plus bas</b> de la facture."
+    ],
+    exemple:"Après la remise, il reste 400,00 € → escompte 2 % : 8,00 € → base imposable : 392,00 € → TVA 21 % : 82,32 € → + 3 bacs consignés : 11,70 € → total : 486,02 €.",
+    plus:"La consigne encourage le client à rapporter bacs et bouteilles : une bouteille de bière consignée est lavée et réutilisée de nombreuses fois, puis recyclée."
+  },
+  questions:[
+    { type:'facture', ind:'I4', pts:20,
+      q:"La <b>Brasserie des Terrils SRL</b> livre un café montois. Les bacs et les fûts sont consignés. Complète la facture.",
+      doc:{ kind:'FACTURE',
+        vendor:{ name:"Brasserie des Terrils SRL", logo:'🍺', color:'#b8860b', addr:["Rue du Terril 3","7080 Frameries","065 67 90 12"], bce:'0812.340.752', iban:'BE54 7320 5193 8497' },
+        client:{ name:"Café Le Beffroi SRL", addr:["Grand-Place 21","7000 Mons"], tva:'BE 0734.568.231' },
+        meta:[["Facture n°","2026/0934"],["Date","30/09/2026"],["Échéance","30/10/2026"],["Livraison","30/09/2026"]],
+        cond:"Remise : 5 % · Escompte : 2 % si paiement avant le 08/10/2026 · TVA 21 % · Emballages consignés non soumis à la TVA",
+        lines:[
+          { d:"Bière blonde « Terril d'Or », bac de 24 × 25 cl", q:20, pu:22.80, t:F('c1',456,"Ligne « Bière blonde »","Combien coûtent 20 bacs à 22,80 € ?","20 × 22,80 = 456,00") },
+          { d:"Bière ambrée « Gueule Noire », fût de 20 L", q:4, pu:64.50, t:F('c2',258,"Ligne « Bière ambrée »","Multiplie le nombre de fûts par leur prix unitaire.","4 × 64,50 = 258,00") } ],
+        extraTitle:"Emballages consignés (hors TVA)",
+        extra:[ { d:"Consigne bac (bac + 24 bouteilles)", q:20, pu:3.90 }, { d:"Consigne fût de 20 L", q:4, pu:30.00 } ],
+        recap:[
+          { label:"Total brut", f:F('c3',714,"Total brut","Additionne les deux lignes de bière.","456,00 + 258,00 = 714,00") },
+          { label:"− Remise 5 %", f:F('c4',35.7,"Remise","Calcule 5 % du total brut.","714,00 × 5 ÷ 100 = 35,70") },
+          { label:"= Montant net", f:F('c5',678.3,"Montant net","Retire la remise du total brut.","714,00 − 35,70 = 678,30") },
+          { label:"− Escompte 2 %", f:F('c6',13.57,"Escompte","L'escompte vient après les réductions commerciales. Sur quel montant le calcules-tu ?","678,30 × 2 ÷ 100 = 13,57 (13,566 arrondi)") },
+          { label:"= Base imposable (HTVA)", f:F('c7',664.73,"Base imposable","Retire l'escompte du montant net.","678,30 − 13,57 = 664,73") },
+          { label:"+ TVA 21 %", f:F('c8',139.59,"TVA 21 %","La TVA porte sur la base imposable. Les consignes en font-elles partie ?","664,73 × 21 ÷ 100 = 139,59 (139,5933 arrondi)") },
+          { label:"+ Emballages consignés", f:F('c9',198,"Emballages consignés","Calcule la consigne des bacs, puis celle des fûts, et additionne-les.","20 × 3,90 + 4 × 30,00 = 78,00 + 120,00 = 198,00") },
+          { label:"= Total à payer", tot:true, f:F('c10',1002.32,"Total à payer","Additionne la base imposable, la TVA et les consignes.","664,73 + 139,59 + 198,00 = 1 002,32") } ],
+        foot:"Escompte perdu en cas de paiement après le 08/10/2026" } },
+    { type:'trous', ind:'I2', pts:12,
+      q:"Complète la synthèse avec les mots de la banque. Clique sur un mot, puis sur le trou. Toutes les étiquettes ne serviront pas.",
+      text:"Le rabais, la remise et la ristourne sont des réductions {0}. L'escompte se calcule ensuite sur le montant {1} et se retranche {2} le calcul de la TVA. Les emballages consignés seront {3} au client quand il les rendra : ils ne sont {4} soumis à la TVA et s'ajoutent après la TVA. Avec plusieurs taux, on calcule une base imposable et une TVA pour {5} taux.",
+      answers:["commerciales","net","avant","remboursés","pas","chaque"],
+      distract:["financières","brut","après","facturés"],
+      hint:"Relis chaque phrase en te demandant : est-ce que ça diminue le montant, est-ce que c'est taxé, et à quel moment du calcul ça intervient ?",
+      expl:"Les réductions commerciales (rabais, remise, ristourne) viennent d'abord ; l'escompte se calcule sur le montant net et se retranche avant la TVA. Les consignes seront remboursées : pas de TVA, ajout après la TVA. Avec plusieurs taux : une base et une TVA pour chaque taux." },
+    { type:'facture', ind:'I5', pts:18,
+      q:"<b>Frit'Distri SRL</b> livre une friterie de Flénu : des produits à 6 % et du matériel à 21 %. Complète la facture.",
+      doc:{ kind:'FACTURE', showRate:true,
+        vendor:{ name:"Frit'Distri SRL", logo:'🍟', color:'#c0392b', addr:["Rue de l'Industrie 15","7110 Houdeng-Goegnies","064 22 58 30"], bce:'0825.771.391', iban:'BE80 0017 3841 2677' },
+        client:{ name:"Friterie Chez Gégé — Gérard Lambert", addr:["Place de Flénu 3","7012 Flénu"], tva:'BE 0751.936.476' },
+        meta:[["Facture n°","FD-26-2210"],["Date","29/09/2026"],["Échéance","29/10/2026"],["Bon de livraison","BL-7741"]],
+        cond:"Frais de port : 18,00 € HTVA · Paiement à 30 jours",
+        lines:[
+          { d:"Pommes de terre Bintje, sac de 25 kg", q:12, pu:14.50, rate:6, t:F('d1',174,"Ligne « Pommes de terre »","Combien coûtent 12 sacs à 14,50 € ?","12 × 14,50 = 174,00") },
+          { d:"Sauce mayonnaise, seau de 10 L", q:6, pu:19.80, rate:6, t:F('d2',118.8,"Ligne « Mayonnaise »","Multiplie le nombre de seaux par leur prix unitaire.","6 × 19,80 = 118,80") },
+          { d:"Barquettes en carton, lot de 500", q:4, pu:22.50, rate:21, t:F('d3',90,"Ligne « Barquettes »","Multiplie le nombre de lots par leur prix unitaire.","4 × 22,50 = 90,00") },
+          { d:"Fourchettes en bois, lot de 1 000", q:3, pu:9.90, rate:21, t:F('d4',29.7,"Ligne « Fourchettes »","Multiplie le nombre de lots par leur prix unitaire.","3 × 9,90 = 29,70") } ],
+        recap:[
+          { label:"Base imposable à 6 %", f:F('d5',310.8,"Base imposable à 6 %","Additionne les lignes à 6 %. Quel est le taux le plus bas de cette facture, et où vont les frais de port ?","174,00 + 118,80 + 18,00 (port) = 310,80") },
+          { label:"TVA 6 %", f:F('d6',18.65,"TVA 6 %","Calcule 6 % de la base imposable à 6 %.","310,80 × 6 ÷ 100 = 18,65 (18,648 arrondi)") },
+          { label:"Base imposable à 21 %", f:F('d7',119.7,"Base imposable à 21 %","Additionne uniquement les lignes taxées à 21 %.","90,00 + 29,70 = 119,70") },
+          { label:"TVA 21 %", f:F('d8',25.14,"TVA 21 %","Calcule 21 % de la base imposable à 21 %.","119,70 × 21 ÷ 100 = 25,14 (25,137 arrondi)") },
+          { label:"= Total à payer", tot:true, f:F('d9',474.29,"Total à payer","Additionne les deux bases et les deux TVA.","310,80 + 18,65 + 119,70 + 25,14 = 474,29") } ],
+        foot:"Merci pour votre confiance" } },
+    { type:'sm', ind:'I5', pts:6,
+      data:"Le <b>Comptoir Borain SRL</b> (Quaregnon) facture à un client :<br>sacs de charbon (TVA 12 %) : 225,00 € · seaux à charbon en métal (TVA 21 %) : 59,70 € · allume-feu (TVA 21 %) : 14,40 € · frais de port : 20,00 € · film d'emballage perdu : 3,50 € · palettes consignées : 24,00 €.",
+      q:"Coche tous les montants qui font partie de la base imposable à 12 %.",
+      options:[ {t:"Sacs de charbon : 225,00 €",ok:true},{t:"Seaux à charbon : 59,70 €",ok:false},{t:"Allume-feu : 14,40 €",ok:false},
+                {t:"Frais de port : 20,00 €",ok:true},{t:"Film d'emballage perdu : 3,50 €",ok:true},{t:"Palettes consignées : 24,00 €",ok:false} ],
+      hint:"Ici, il n'y a pas de 6 %. Quel est le taux le plus bas de cette facture ? Et que fait-on des emballages que le client rendra ?",
+      expl:"Base à 12 % = charbon 225,00 + port 20,00 + emballage perdu 3,50 = 248,50 €. Le port et l'emballage perdu suivent le taux le plus bas de la facture, ici 12 %. Les seaux et l'allume-feu restent à 21 % ; les palettes consignées ne sont pas taxées." }
+  ]},
+/* ---------------- MISSION 4 ---------------- */
+{ icon:'🛠️', title:"Rectifier une facture et défi final", short:"Note de crédit, facture complémentaire et défi",
+  trackName:"Mission 4 — Rectifier une facture et défi final",
+  brief:{
+    rappel:[
+      "Une facture déjà envoyée ne se modifie pas : on la corrige par un <b>document rectificatif</b>.",
+      "La <b>note de crédit</b> diminue le montant dû par le client ; la <b>facture complémentaire</b> l'augmente.",
+      "On la calcule comme une facture, avec les <b>mêmes conditions</b> que la facture d'origine (remise, taux de TVA)."
+    ],
+    exemple:"Retour de 2 chaises à 50,00 € HTVA, vendues avec 10 % de remise : 100,00 − 10,00 = 90,00 € · TVA 21 % : 18,90 € · note de crédit : 108,90 €.",
+    plus:"Une note de crédit rappelle toujours le numéro et la date de la facture qu'elle corrige : le comptable du client peut ainsi relier les deux documents.",
+    defi:"🏆 La dernière question est le défi final : une facture à deux taux, avec remise, port et consignes. Prends ton temps : tout ce que tu as travaillé y sert."
+  },
+  questions:[
+    { type:'classement', ind:'I6', pts:14,
+      q:"Pour chaque situation, quel document le vendeur doit-il établir ? Clique sur une situation, puis sur le document.",
+      zones:["Note de crédit","Facture complémentaire"],
+      items:[ {t:"Le client renvoie 3 lampes arrivées cassées.",z:0},
+              {t:"Le vendeur a oublié de facturer les frais de port prévus.",z:1},
+              {t:"La remise de 5 % promise au client n'a pas été déduite.",z:0},
+              {t:"10 cartons ont été livrés, mais seulement 8 ont été facturés.",z:1},
+              {t:"Le client rapporte les bacs consignés vides.",z:0},
+              {t:"Le prix facturé est de 18,00 € au lieu des 21,00 € convenus.",z:1},
+              {t:"Un rabais est accordé après coup pour une livraison en retard.",z:0} ],
+      hint:"Pour chaque situation, demande-toi si le client doit finalement payer moins ou plus que ce qui a été facturé.",
+      expl:"Note de crédit (le client doit moins) : retour de marchandises, remise oubliée, retour d'emballages consignés, rabais accordé après coup. Facture complémentaire (le client doit plus) : port oublié, articles livrés mais pas facturés, prix facturé trop bas." },
+    { type:'facture', ind:'I6', pts:10,
+      q:"Le <b>Garage Dubois &amp; Fils SRL</b> avait acheté 12 spots LED à 44,00 € HTVA pièce (facture n° 2026-0288 : remise 5 %, TVA 21 %). Il renvoie <b>3 spots défectueux</b>. Complète la note de crédit.",
+      doc:{ kind:'NOTE DE CRÉDIT',
+        vendor:{ name:"Lumi'Hainaut SRL", logo:'💡', color:'#7b4fd6', addr:["Rue de Mons 210","7300 Boussu","065 80 14 66"], bce:'0840.662.178', iban:'BE77 1036 6204 1842' },
+        client:{ name:"Garage Dubois & Fils SRL", addr:["Rue de la Gare 44","7390 Quaregnon"], tva:'BE 0698.124.539' },
+        meta:[["Note de crédit n°","NC-26-019"],["Date","01/10/2026"],["Concerne","facture n° 2026-0288"],["du","18/09/2026"]],
+        cond:"Conditions de la facture d'origine : remise 5 % · TVA 21 %",
+        lines:[ { d:"Spot LED d'atelier 50 W — retour de pièces défectueuses", q:3, pu:44.00, t:F('n1',132,"Valeur des spots renvoyés","Combien valent les 3 spots renvoyés à leur prix unitaire ?","3 × 44,00 = 132,00") } ],
+        recap:[
+          { label:"− Remise 5 %", f:F('n2',6.6,"Remise","La facture d'origine accordait 5 % de remise. Le client doit-il récupérer le prix plein ou le prix remisé ?","132,00 × 5 ÷ 100 = 6,60") },
+          { label:"= Montant HTVA", f:F('n3',125.4,"Montant HTVA","Retire la remise de la valeur des spots renvoyés.","132,00 − 6,60 = 125,40") },
+          { label:"+ TVA 21 %", f:F('n4',26.33,"TVA 21 %","La TVA payée sur ces spots doit aussi être rendue : calcule 21 % du montant HTVA.","125,40 × 21 ÷ 100 = 26,33 (26,334 arrondi)") },
+          { label:"= Total de la note de crédit", tot:true, f:F('n5',151.73,"Total de la note de crédit","Additionne le montant HTVA et la TVA.","125,40 + 26,33 = 151,73") } ],
+        foot:"Montant à déduire de votre prochain paiement" } },
+    { type:'chasse', ind:'I3', pts:12,
+      q:"Un stagiaire de <b>Bois &amp; Jardin SRL</b> a rédigé des explications pour le client. La facture est juste, mais certaines de ses phrases sont fausses. Clique sur chaque phrase fausse (une fausse alerte coûte 1 XP).",
+      doc:{ kind:'FACTURE',
+        vendor:{ name:"Bois & Jardin SRL", logo:'🌳', color:'#2e8b57', addr:["Chaussée de Mons 77","7330 Saint-Ghislain","065 66 30 81"], bce:'0712.398.682', iban:'BE45 0910 1548 7289' },
+        client:{ name:"Camping Les Étangs SRL", addr:["Rue des Étangs 9","7370 Dour"], tva:'BE 0834.715.286' },
+        meta:[["Facture n°","BJ-2026-311"],["Date","25/09/2026"],["Échéance","25/10/2026"]],
+        cond:"Rabais 5 % · Remise 10 % · Escompte 2 % si paiement dans les 8 jours · Port 30,00 € · TVA 21 %",
+        lines:[ { d:"Banc de jardin en chêne", q:8, pu:85.00, t:680 }, { d:"Table de pique-nique", q:4, pu:145.00, t:580 } ],
+        recap:[
+          { label:"Total brut", v:1260 }, { label:"− Rabais 5 %", v:63 }, { label:"= Après rabais", v:1197 },
+          { label:"− Remise 10 %", v:119.7 }, { label:"= Montant net", v:1077.3 }, { label:"− Escompte 2 %", v:21.55 },
+          { label:"= Après escompte", v:1055.75 }, { label:"+ Frais de port", v:30 }, { label:"= Base imposable", v:1085.75 }, { label:"+ TVA 21 %", v:228.01 },
+          { label:"+ Palettes consignées (2 × 15,00)", v:30 }, { label:"= Total à payer", v:1343.76, tot:true } ],
+        foot:"Paiement à 30 jours" },
+      sentences:[
+        { t:"Le rabais de 5 % est calculé sur le prix brut de 1 260,00 €.", err:false },
+        { t:"La remise de 10 % est calculée sur 1 197,00 €, le montant qui reste après le rabais.", err:false },
+        { t:"Ensemble, le rabais et la remise vous font économiser 15 % du prix brut, soit 189,00 €.", err:true, fix:"Les réductions s'enchaînent : 63,00 + 119,70 = 182,70 €, soit 14,5 % du prix brut." },
+        { t:"L'escompte de 2 % vous est accordé parce que vous achetez une grande quantité.", err:true, fix:"L'escompte récompense un paiement rapide, pas la quantité : c'est la remise qui dépend de la quantité." },
+        { t:"Les frais de port de 30,00 € sont soumis à la TVA.", err:false },
+        { t:"Les palettes consignées sont comprises dans la base imposable de 1 085,75 €.", err:true, fix:"La base (1 055,75 € + 30,00 € de port) ne contient pas les palettes : elles s'ajoutent après la TVA, sans TVA." },
+        { t:"Si vous rapportez les palettes, vous récupérerez les 30,00 € de consigne.", err:false } ],
+      hint:"Pour chaque phrase, refais le calcul sur la facture : quel montant a servi à chaque étape, et l'élément est-il taxé ?",
+      expl:"Trois phrases sont fausses : les réductions successives ne s'additionnent pas en pourcentage (182,70 € et non 189,00 €), l'escompte récompense un paiement rapide, et les consignes restent en dehors de la base imposable." },
+    { type:'facture', ind:'I5', pts:20, defi:true,
+      q:"🏆 <b>Défi final.</b> Le Comité des fêtes de Frameries prépare la ducasse et commande ses boissons chez <b>Distri-Fête SRL</b>. Les lignes sont déjà calculées : complète le récapitulatif par taux.",
+      doc:{ kind:'FACTURE', showRate:true,
+        vendor:{ name:"Distri-Fête SRL", logo:'🎉', color:'#d6336c', addr:["Rue Saint-Paul 18","7130 Binche","064 33 72 19"], bce:'0726.431.812', iban:'BE43 7512 0933 1801' },
+        client:{ name:"Comité des fêtes de Frameries ASBL", addr:["Rue de la Libération 1","7080 Frameries"], tva:'BE 0856.902.354' },
+        meta:[["Facture n°","DF-2026-0157"],["Date","01/10/2026"],["Échéance","16/10/2026"],["Livraison","02/10/2026"]],
+        cond:"Remise : 5 % sur tous les articles · Frais de port : 30,00 € HTVA · Fûts consignés : 6 × 30,00 € · Paiement à 15 jours",
+        lines:[
+          { d:"Eau minérale, pack de 6 × 1,5 L", q:40, pu:3.20, rate:6, t:128 },
+          { d:"Soda, pack de 24 canettes", q:15, pu:11.40, rate:6, t:171 },
+          { d:"Bière blonde, fût de 20 L", q:6, pu:58.00, rate:21, t:348 },
+          { d:"Gobelets réutilisables, lot de 100", q:3, pu:24.00, rate:21, t:72 } ],
+        recap2:{ heads:["TVA 6 %","TVA 21 %"], rows:[
+          { label:"Total brut", cells:[ F('x1',299,"Total brut à 6 %","Additionne les lignes taxées à 6 %.","128,00 + 171,00 = 299,00"), F('x2',420,"Total brut à 21 %","Additionne les lignes taxées à 21 %.","348,00 + 72,00 = 420,00") ] },
+          { label:"− Remise 5 %", cells:[ F('x3',14.95,"Remise à 6 %","Calcule 5 % du total brut à 6 %.","299,00 × 5 ÷ 100 = 14,95"), F('x4',21,"Remise à 21 %","Calcule 5 % du total brut à 21 %.","420,00 × 5 ÷ 100 = 21,00") ] },
+          { label:"= Base imposable", cells:[ F('x5',314.05,"Base imposable à 6 %","Après la remise, que manque-t-il encore dans la base au taux le plus bas ?","299,00 − 14,95 + 30,00 (port, taux le plus bas) = 314,05"), F('x6',399,"Base imposable à 21 %","Ce groupe n'est pas celui du taux le plus bas : reçoit-il des frais ?","420,00 − 21,00 = 399,00") ] },
+          { label:"TVA", cells:[ F('x7',18.84,"TVA 6 %","Calcule 6 % de la base imposable à 6 %.","314,05 × 6 ÷ 100 = 18,84 (18,843 arrondi)"), F('x8',83.79,"TVA 21 %","Calcule 21 % de la base imposable à 21 %.","399,00 × 21 ÷ 100 = 83,79") ] } ],
+          after:[
+            { label:"+ Fûts consignés", f:F('x9',180,"Fûts consignés","Combien de fûts, et quelle consigne par fût ?","6 × 30,00 = 180,00") },
+            { label:"= Total à payer", tot:true, f:F('x10',995.68,"Total à payer","Additionne les deux bases, les deux TVA et les consignes.","314,05 + 18,84 + 399,00 + 83,79 + 180,00 = 995,68") } ] },
+        foot:"Bonne ducasse !" } }
+  ]}
+];
+
+/* ============================================================
+   DÉRIVÉS : points, totaux, rotation des QCM
+   ============================================================ */
+function docFields(doc){
+  const out = [];
+  doc.lines.forEach(x => { if (x.t && typeof x.t === 'object') out.push(x.t); });
+  (doc.recap||[]).forEach(r => { if (r.f) out.push(r.f); });
+  if (doc.recap2){ doc.recap2.rows.forEach(r => r.cells.forEach(c => { if (c && typeof c === 'object') out.push(c); })); (doc.recap2.after||[]).forEach(r => { if (r.f) out.push(r.f); }); }
+  return out;
+}
+LEVELS.forEach(lv => { lv.maxPoints = lv.questions.reduce((s,q) => s + q.pts, 0); });
+const TOTAL_XP = LEVELS.reduce((s,lv) => s + lv.maxPoints, 0);
+const TOTAL_Q  = LEVELS.reduce((s,lv) => s + lv.questions.length, 0);
+const DECALAGE = [2,0,3,1, 1,3,0,2, 3,1,2,0, 0,2,1,3, 2,3,0,1];
+(function melangerPropositions(liste){
+  let k = 0;
+  liste.forEach(q => {
+    if (q.type !== 'qcm') return;
+    const t = DECALAGE[k++ % DECALAGE.length];
+    for (let n = 0; n < t; n++){ q.options.unshift(q.options.pop()); q.correct = (q.correct + 1) % q.options.length; }
+  });
+})(LEVELS.flatMap(lv => lv.questions));
+
+/* Durée estimée (§3.9 / §3.14) : secondes par type, 1 min par briefing */
+const DUREE = { qcm:40, vf:20, sm:60, reponse:90, classement:90, appariement:60, ordre:60, trous:90, chasse:120 };
+function dureeQ(q){ return q.type === 'facture' ? 40 + 22 * docFields(q.doc).length : DUREE[q.type]; }
+const DUREE_TOTALE = LEVELS.reduce((s,lv) => s + 60 + lv.questions.reduce((t,q) => t + dureeQ(q), 0), 0);
+
+const RANKS = [
+  { p:0,    icon:'🎒', name:'Stagiaire' },
+  { p:0.20, icon:'🧾', name:'Aide-facturier' },
+  { p:0.45, icon:'🧮', name:'Facturier' },
+  { p:0.65, icon:'📊', name:'Responsable facturation' },
+  { p:0.85, icon:'👑', name:'Directeur financier' } ];
+const BADGES = [
+  { id:'b1', icon:'🚀', name:'Premier pas', cond:"Termine la mission 1." },
+  { id:'b2', icon:'🧾', name:'Facture parfaite', cond:"Complète une facture sans aucune erreur du premier coup." },
+  { id:'b3', icon:'🧮', name:'Multi-taux', cond:"Réussis la facture à deux taux de la mission 3 du premier coup." },
+  { id:'b4', icon:'🔍', name:'Œil de lynx', cond:"Trouve toutes les erreurs du stagiaire du premier coup, sans fausse alerte." },
+  { id:'b5', icon:'🔥', name:'En série', cond:"Enchaîne 5 bonnes réponses du premier coup." },
+  { id:'b6', icon:'🏆', name:'Défi relevé', cond:"Obtiens au moins 80 % des XP du défi final." },
+  { id:'b7', icon:'🎯', name:'Bien estimé', cond:"Ta prédiction correspond à ton résultat sur une mission." },
+  { id:'b8', icon:'👑', name:'Facturier accompli', cond:"Termine tout le parcours." } ];
+const TYPE_LABEL = { reponse:'Réponse à écrire', qcm:'QCM', vf:'Vrai / Faux', sm:'Sélection multiple', classement:'Classement',
+  appariement:'Appariement', ordre:'Remise en ordre', trous:'Texte à trous', chasse:'Chasse aux erreurs' };
+const PRED = [ { v:0.5, t:'Environ la moitié 😅', n:'environ la moitié' }, { v:0.75, t:'Les trois quarts 💪', n:'les trois quarts' }, { v:1, t:'Toutes ! 🏆', n:'toutes' } ];
+
+/* ============================================================
+   TRACKING — Configuration (SPEC_Tracking_Eleves_v5)
+   ============================================================ */
+const TRACKING = {
+  appName: "La facture — Partie 2",
+  totalNiveaux: 4,
+  sessionId: null,
+  scriptUrl: "https://script.google.com/macros/s/AKfycbx9bRMVuHU2mgFLii1KcQXD3LdZahnDH1rf1cWv9RuDvQAt0l3VtLtxzmbH7MtpJWRjfA/exec"
+};
+
+/* ============================================================
+   ÉTAT
+   ============================================================ */
+const APP = {
+  screen:'welcome', level:null, q:0, qs:{}, score:0, streak:0, bestStreak:0,
+  done:{}, completed:new Set(), pred:{}, badges:new Set(), rankIdx:0, sound:false, lastXY:null,
+  email: localStorage.getItem('student_email') || '',
+  classe: localStorage.getItem('student_classe') || '',
+  validated:false,
+  exerciseStartTime:null, exerciseTimes:{}, exerciseScores:{}, scoreBeforeExercise:0, timerLevel:null,
+  globalTimerStart:null, globalTimerInterval:null
+};
+function key(l,i){ return l + '_' + i; }
+function getQ(l,i){ return LEVELS[l].questions[i]; }
+function S(l,i){
+  const k = key(l,i);
+  if (APP.qs[k]) return APP.qs[k];
+  const Q = getQ(l,i);
+  const st = { att:0, done:false, status:null, earned:0, firstPts:0, fb:null, sel:null, place:{}, es:{}, vals:{}, fs:{}, bad:{}, flags:{}, fa:0, elim:{}, smSel:{}, bounced:{} };
+  const seed = l*31 + i*7 + 11;
+  if (Q.type === 'classement') st.order = shuffled(Q.items.length, seed);
+  if (Q.type === 'appariement'){ Q._pool = Q._pool || Q.pairs.map(p => p.r).concat(Q.distract); st.order = shuffled(Q._pool.length, seed); }
+  if (Q.type === 'ordre'){ Q._labels = Q._labels || Q.steps.concat(Q.distract); st.order = shuffled(Q._labels.length, seed); }
+  if (Q.type === 'trous'){ Q._bank = Q._bank || Q.answers.concat(Q.distract); st.order = shuffled(Q._bank.length, seed); }
+  if (Q.type === 'sm') st.order = shuffled(Q.options.length, seed);
+  APP.qs[k] = st; return st;
+}
+
+/* ============================================================
+   MACHINE À ÉTATS
+   ============================================================ */
+function setScreen(name){ APP.screen = name; renderScreen(); const f = document.getElementById('main').firstElementChild; if (f) f.classList.add('enter'); window.scrollTo({ top:0, behavior:'smooth' }); }
+function renderScreen(){
+  const m = document.getElementById('main');
+  switch (APP.screen){
+    case 'welcome':  m.innerHTML = renderWelcome(); break;
+    case 'hub':      m.innerHTML = renderHub(); break;
+    case 'brief':    m.innerHTML = renderBrief(APP.level); break;
+    case 'question': m.innerHTML = renderQuestion(APP.level, APP.q); break;
+    case 'bilan':    m.innerHTML = renderBilan(APP.level); break;
+  }
+  updateHUD();
+}
+function render(){ renderScreen(); }
+
+/* ============================================================
+   ÉCRANS
+   ============================================================ */
+function renderWelcome(){
+  const min = Math.round(DUREE_TOTALE/60/5)*5;
+  return `<section class="screen">
+  <div class="hero">
+    <div>
+      <h1>La facture<span>Partie 2 — calculs, ordre des opérations et documents rectificatifs</span></h1>
+      <p class="lead">Complète de vraies factures, case par case : remises, escompte, frais de port, consignes, plusieurs taux de TVA… puis corrige-les avec une note de crédit.</p>
+      <div class="counters">
+        <div class="counter"><b>${LEVELS.length}</b> missions</div>
+        <div class="counter"><b>${TOTAL_Q}</b> questions</div>
+        <div class="counter"><b>${TOTAL_XP}</b> XP</div>
+        <div class="counter"><b>${BADGES.length}</b> badges</div>
+        <div class="counter">⏱️ environ <b>${min}</b> min</div>
+      </div>
+      ${APP.validated ? `<div class="who">Connecté : <b>${esc(APP.email)}</b>${APP.classe ? ' · classe <b>' + esc(APP.classe) + '</b>' : ''}</div>` : ''}
+      <div class="btnrow"><button class="btn" id="btnStart" onclick="startApp()">Commencer le parcours</button></div>
+      <div class="btnrow">
+        <button class="lbbtn app" onclick="openLB('app')">🏆 Classement</button>
+        <button class="lbbtn glob" onclick="openLB('global')">🌍 Général</button>
+      </div>
+    </div>
+    <div class="mini-inv" aria-hidden="true">
+      <div class="t">FACTURE</div>
+      <div class="bar" style="width:60%"></div><div class="bar" style="width:40%"></div>
+      <div class="row" style="margin-top:14px"><span>Total brut</span><span class="q">…</span></div>
+      <div class="row"><span>− Remise</span><span class="q">…</span></div>
+      <div class="row"><span>+ Frais de port</span><span class="q">…</span></div>
+      <div class="row"><span>+ TVA</span><span class="q">…</span></div>
+      <div class="row" style="font-weight:800;color:var(--ink)"><span>Total à payer</span><span class="q">?</span></div>
+      <div class="stamp">À COMPLÉTER</div>
+    </div>
+  </div></section>`;
+}
+function startApp(){
+  if (!APP.validated || !TRACKING.sessionId){ showEmailModal(); return; }
+  setScreen('hub');
+}
+function goHub(){ if (!APP.validated){ showEmailModal(); return; } setScreen('hub'); }
+function isUnlocked(l){ return l === 0 || !!APP.done[l-1]; }
+function starsFor(r){ return r >= 0.85 ? '★★★' : r >= 0.65 ? '★★☆' : r >= 0.45 ? '★☆☆' : '☆☆☆'; }
+
+function renderHub(){
+  const allDone = LEVELS.every((_,l) => APP.done[l]);
+  let h = `<section class="screen">`;
+  if (allDone) h += renderFinal();
+  h += `<h2 class="sectitle">🗺️ Ton parcours</h2><div class="path">`;
+  LEVELS.forEach((lv,l) => {
+    const d = APP.done[l], un = isUnlocked(l);
+    const cls = d ? 'done' : (un ? 'todo' : 'locked');
+    const meta = d ? `${starsFor(d.earned/d.max)} · ${d.earned}/${d.max} XP` : `${lv.questions.length} questions · ${lv.maxPoints} XP à gagner`;
+    h += `<div class="pstep ${l%2===0?'left':'right'}">
+      <div class="node ${cls}">${d ? '✓' : (un ? (l+1) : '🔒')}</div>
+      <button class="lvcard" ${un ? '' : 'disabled'} onclick="openLevel(${l})" data-lv="${l}">
+        <div class="ic">${lv.icon}</div><h3>Mission ${l+1} — ${lv.title}</h3><p>${lv.short}</p><div class="meta">${meta}</div>
+      </button></div>`;
+  });
+  h += `</div><h2 class="sectitle">🏅 Vitrine à trophées</h2><div class="trophies">`;
+  BADGES.forEach(b => { const on = APP.badges.has(b.id);
+    h += `<div class="badge ${on?'on':'off'}"><span class="bi">${b.icon}</span><div><div class="bn">${b.name}</div><div class="bc">${b.cond}</div></div></div>`; });
+  h += `</div></section>`;
+  return h;
+}
+function openLevel(l){
+  if (!isUnlocked(l)) return;
+  APP.level = l;
+  if (APP.done[l]){ setScreen('bilan'); return; }
+  if (APP.pred[l] != null){
+    const n = LEVELS[l].questions.length; let i = 0;
+    while (i < n && S(l,i).done) i++;
+    APP.q = Math.min(i, n-1); setScreen('question'); return;
+  }
+  openBrief(l);
+}
+function openBrief(l){
+  APP.level = l;
+  if (!APP.done[l] && (APP.timerLevel !== l || !APP.exerciseStartTime)){ startExerciseTimer(l); APP.timerLevel = l; }
+  setScreen('brief');
+}
+function renderBrief(l){
+  const lv = LEVELS[l], b = lv.brief;
+  const inds = [...new Set(lv.questions.map(q => q.ind))];
+  return `<section class="screen">
+  <div class="panel">
+    <div class="mhead"><span class="ic">${lv.icon}</span><div><div class="sub">Mission ${l+1} sur ${LEVELS.length} · ${lv.questions.length} questions · ${lv.maxPoints} XP en jeu</div><h2>${lv.title}</h2></div></div>
+  </div>
+  <div class="panel"><div class="h4">🎯 À la fin de cette mission, tu sauras…</div>
+    <ul class="obj">${inds.map(id => `<li>${IND[id].obj}.</li>`).join('')}</ul></div>
+  <div class="panel rappel"><div class="h4">📌 Rappel</div>
+    ${b.rappel.map(p => `<p>${p}</p>`).join('')}
+    <div class="exbox"><b>Exemple</b><br>${b.exemple}</div>
+    ${b.how ? `<div class="howbox">🧾 ${b.how}</div>` : ''}
+    ${b.defi ? `<div class="howbox">${b.defi}</div>` : ''}
+    <div class="plusbox">✨ <b>Pour aller plus loin</b> — ${b.plus}</div>
+  </div>
+  <div class="panel"><div class="h4">🔮 Combien de questions penses-tu réussir du premier coup ?</div>
+    <div class="pred">${PRED.map(p => `<button class="${APP.pred[l]===p.v?'sel':''}" data-pred="${p.v}" onclick="setPred(${l},${p.v})">${p.t}</button>`).join('')}</div>
+    <div class="btnrow"><button class="btn ghost" onclick="setScreen('hub')">← Parcours</button>
+    <button class="btn" id="btnGo" ${APP.pred[l]==null?'disabled':''} onclick="goQuestions(${l})">C'est parti ➜</button></div>
+  </div></section>`;
+}
+function setPred(l,v){ APP.pred[l] = v; render(); }
+function goQuestions(l){ if (APP.pred[l] == null) return; APP.level = l; APP.q = 0; setScreen('question'); }
+
+/* ---------- QUESTION ---------- */
+function qLabel(Q){
+  let t;
+  if (Q.type === 'facture') t = Q.defi ? '🏆 Défi — facture à compléter' : (Q.doc.kind === 'NOTE DE CRÉDIT' ? 'Note de crédit à compléter' : 'Facture à compléter');
+  else t = TYPE_LABEL[Q.type];
+  const tries = Q.type === 'vf' ? '1 essai' : (Q.type === 'facture' ? '2 vérifications' : '2 essais');
+  return `${t} — ${tries} · ${Q.pts} XP`;
+}
+function renderQuestion(l,i){
+  const lv = LEVELS[l], Q = getQ(l,i), st = S(l,i);
+  let pips = lv.questions.map((_,k) => { const s = S(l,k); const c = k === i && !s.done ? 'cur' : (s.status === 'correct' ? 'g' : s.status === 'hint' ? 'o' : s.status === 'shown' ? 'r' : (k===i?'cur':'')); return `<span class="qpip ${c}"></span>`; }).join('');
+  let body = '';
+  switch (Q.type){
+    case 'reponse': body = rReponse(l,i,Q,st); break;
+    case 'qcm': body = rQcm(l,i,Q,st); break;
+    case 'vf': body = rVf(l,i,Q,st); break;
+    case 'sm': body = rSm(l,i,Q,st); break;
+    case 'classement': body = rClassement(l,i,Q,st); break;
+    case 'appariement': body = rAppariement(l,i,Q,st); break;
+    case 'ordre': body = rOrdre(l,i,Q,st); break;
+    case 'trous': body = rTrous(l,i,Q,st); break;
+    case 'chasse': body = rChasse(l,i,Q,st); break;
+    case 'facture': body = rFacture(l,i,Q,st); break;
+  }
+  const fb = st.fb ? `<div class="fb ${st.fb.kind}" id="fb">${st.fb.html}</div>` : '';
+  let act = '';
+  if (!st.done){ if (Q.type !== 'vf') act = `<button class="btn" id="btnCheck" onclick="check()">Vérifier</button>`; }
+  else { const last = i === lv.questions.length - 1;
+    act = last ? `<button class="btn gold" id="btnNext" onclick="nextQ()">Voir le bilan de la mission ➜</button>` : `<button class="btn" id="btnNext" onclick="nextQ()">Question suivante ➜</button>`; }
+  return `<section class="screen">
+  <div class="qtop"><div class="mt">${lv.icon} Mission ${l+1} — question ${i+1}/${lv.questions.length}</div><div class="qpips">${pips}</div></div>
+  <div class="qcard" id="qcard">
+    <div class="qlabel">${qLabel(Q)}</div>
+    ${body}
+    ${fb}
+    <div class="btnrow">${act}</div>
+  </div></section>`;
+}
+function nextQ(){
+  const l = APP.level, n = LEVELS[l].questions.length;
+  if (APP.q < n - 1){ APP.q++; setScreen('question'); }
+  else finishLevel(l);
+}
+
+/* ---------- Réponse à écrire ---------- */
+function rReponse(l,i,Q,st){
+  const cls = st.done ? (st.status === 'shown' ? 'ko' : 'ok') : '';
+  return `${Q.data ? `<span class="data">${Q.data}</span>` : ''}<div class="qtext">${Q.q}</div>
+  <div class="ansrow"><input class="ans ${cls}" id="ans" inputmode="decimal" autocomplete="off" aria-label="Ta réponse" value="${esc(st.val||'')}" ${st.done?'disabled':''} oninput="onAns(this)" onkeydown="if(event.key==='Enter')check()"> <span>${Q.unit||''}</span></div>
+  <div class="preview" id="prev">${previewTxt(st.val||'')}</div>`;
+}
+function previewTxt(v){ const r = evalExpr(v); return r === null ? '' : `🧮 ${prettyExpr(v)} → = ${fmt(r)}`; }
+function onAns(el){ const st = S(APP.level, APP.q); st.val = el.value; const p = document.getElementById('prev'); if (p) p.innerHTML = previewTxt(el.value); }
+
+/* ---------- QCM ---------- */
+function rQcm(l,i,Q,st){
+  return `${Q.data ? `<span class="data">${Q.data}</span>` : ''}<div class="qtext">${Q.q}</div><div class="opts">${
+    Q.options.map((o,k) => {
+      let c = '';
+      if (st.done){ if (k === Q.correct) c = 'good'; else if (st.elim[k] || st.sel === k) c = 'bad'; }
+      else if (st.elim[k]) c = 'bad'; else if (st.sel === k) c = 'sel';
+      return `<button class="opt ${c}" data-i="${k}" ${st.done || st.elim[k] ? 'disabled' : ''} onclick="pickOpt(${k})">${o}</button>`;
+    }).join('')}</div>`;
+}
+function pickOpt(k){ const st = S(APP.level, APP.q); if (st.done || st.elim[k]) return; st.sel = k; render(); }
+
+/* ---------- Vrai / Faux ---------- */
+function rVf(l,i,Q,st){
+  const b = (v,t) => { let c = ''; if (st.done){ if (v === Q.ans) c = 'good'; else if (st.sel === v) c = 'bad'; }
+    return `<button class="opt ${c}" data-v="${v}" ${st.done?'disabled':''} onclick="ansVF(${v})">${t}</button>`; };
+  return `${Q.data ? `<span class="data">${Q.data}</span>` : ''}<div class="qtext">${Q.q}</div><div class="vfrow">${b(true,'✔️ Vrai')}${b(false,'✖️ Faux')}</div>`;
+}
+
+/* ---------- Sélection multiple ---------- */
+function rSm(l,i,Q,st){
+  return `${Q.data ? `<span class="data">${Q.data}</span>` : ''}<div class="qtext">${Q.q}</div><div class="opts">${
+    st.order.map(k => { const o = Q.options[k], on = !!st.smSel[k]; let c = on ? 'sel' : '';
+      if (st.done){ if (o.ok && on) c = 'good'; else if (o.ok && !on) c = 'miss'; else if (!o.ok && on) c = 'bad'; else c = ''; }
+      return `<button class="opt ${c}" data-i="${k}" ${st.done?'disabled':''} onclick="toggleSM(${k})">${on ? '☑️' : '⬜'} ${o.t}</button>`; }).join('')}</div>`;
+}
+function toggleSM(k){ const st = S(APP.level, APP.q); if (st.done) return; st.smSel[k] = !st.smSel[k]; render(); }
+
+/* ---------- Classement par zones ---------- */
+function chipCls(st, e){ return st.es[e] ? st.es[e] : (st.sel === e ? 'sel' : ''); }
+function rClassement(l,i,Q,st){
+  const res = st.order.filter(e => st.place[e] == null).map(e =>
+    `<button class="chip ${st.sel===e?'sel':''} ${st.bounced[e]?'bounce':''}" data-i="${e}" onclick="selItem(${e})">${Q.items[e].t}</button>`).join('');
+  const zones = Q.zones.map((z,zi) => {
+    const inside = st.order.filter(e => st.place[e] === zi).map(e => {
+      const s = st.es[e] || ''; const fix = s === 'r' ? `<span class="fix">→ ${Q.zones[Q.items[e].z]}</span>` : '';
+      return `<button class="chip ${s}" data-i="${e}" ${s?'disabled':''} onclick="event.stopPropagation();unplace(${e})">${Q.items[e].t}${fix}</button>`; }).join('');
+    return `<div class="zone ${st.sel!=null?'target':''}" role="button" tabindex="0" data-z="${zi}" onclick="placeItem(${zi})" onkeydown="if(event.key==='Enter')placeItem(${zi})"><div class="zt">${z}</div>${inside}</div>`; }).join('');
+  st.bounced = {};
+  return `<div class="qtext">${Q.q}</div><div class="reserve">${res}</div><div class="zones z${Q.zones.length}">${zones}</div>`;
+}
+function selItem(e){ const st = S(APP.level, APP.q), Q = getQ(APP.level, APP.q); if (st.done) return; if (Q.type === 'classement' && st.es[e]) return; st.sel = st.sel === e ? null : e; render(); }
+function placeItem(z){ const st = S(APP.level, APP.q); if (st.done || st.sel == null) return; st.place[st.sel] = z; st.sel = null; render(); }
+function unplace(e){ const st = S(APP.level, APP.q); if (st.done || st.es[e]) return; delete st.place[e]; render(); }
+
+/* ---------- Appariement ---------- */
+function rAppariement(l,i,Q,st){
+  const pool = Q._pool;
+  const rows = Q.pairs.map((p,e) => {
+    const s = st.es[e] || ''; let right;
+    if (s === 'g' || s === 'o') right = `<span class="lk">✓ ${pool[st.place[e]]}</span>`;
+    else if (s === 'r') right = `<span class="lk"><s>${pool[st.place[e]]}</s> → ${p.r}</span>`;
+    else right = `<select class="pair" data-i="${e}" aria-label="Calcul pour la situation ${e+1}" onchange="setPair(${e},this.value)"><option value="">— choisis un calcul —</option>${
+      st.order.map(k => `<option value="${k}" ${st.place[e]===k?'selected':''}>${pool[k]}</option>`).join('')}</select>`;
+    return `<div class="pairrow ${s}"><div>${p.l}</div><div>${right}</div></div>`; }).join('');
+  return `<div class="qtext">${Q.q}</div><div class="pairs">${rows}</div>`;
+}
+function setPair(e,v){ const st = S(APP.level, APP.q); if (st.done) return; if (v === '') delete st.place[e]; else st.place[e] = +v; }
+
+/* ---------- Remise en ordre ---------- */
+function rOrdre(l,i,Q,st){
+  const labels = Q._labels, used = new Set(Object.values(st.place));
+  const bank = st.order.filter(k => !used.has(k)).map(k =>
+    `<button class="chip ${st.sel===k?'sel':''} ${st.bounced[k]?'bounce':''}" data-i="${k}" onclick="selItem(${k})">${labels[k]}</button>`).join('');
+  const slots = Q.steps.map((_,s) => {
+    const k = st.place[s], es = st.es[s] || '';
+    const content = k != null ? `<span>${labels[k]}${es==='r'?`<span class="fix">→ ${Q.steps[s]}</span>`:''}</span>` : `<span class="ph">Clique ici pour placer l'étiquette choisie</span>`;
+    return `<button class="slot ${es} ${st.sel!=null && k==null?'target':''}" data-s="${s}" ${es?'disabled':''} onclick="placeSlot(${s})"><span class="n">${s+1}</span>${content}</button>`; }).join('');
+  st.bounced = {};
+  return `<div class="qtext">${Q.q}</div><div class="slots">${slots}</div><div class="reserve">${bank}</div>`;
+}
+function placeSlot(s){
+  const st = S(APP.level, APP.q); if (st.done || st.es[s]) return;
+  if (st.sel != null){ st.place[s] = st.sel; st.sel = null; }
+  else if (st.place[s] != null) delete st.place[s];
+  render();
+}
+
+/* ---------- Texte à trous ---------- */
+function rTrous(l,i,Q,st){
+  const bank = Q._bank, used = new Set(Object.values(st.place));
+  const parts = Q.text.split(/\{(\d+)\}/);
+  let txt = '';
+  parts.forEach((p,k) => {
+    if (k % 2 === 0){ txt += p; return; }
+    const b = +p, w = st.place[b], es = st.es[b] || '';
+    const inner = w != null ? bank[w] + (es==='r' ? ` <span class="fix">→ ${Q.answers[b]}</span>` : '') : '…';
+    txt += `<button class="blank ${es} ${st.sel!=null && w==null?'target':''}" data-b="${b}" ${es?'disabled':''} onclick="placeBlank(${b})">${inner}</button>`;
+  });
+  const chips = st.order.filter(k => !used.has(k)).map(k =>
+    `<button class="chip ${st.sel===k?'sel':''} ${st.bounced[k]?'bounce':''}" data-i="${k}" onclick="selItem(${k})">${bank[k]}</button>`).join('');
+  st.bounced = {};
+  return `<div class="qtext">${Q.q}</div><div class="trous">${txt}</div><div class="reserve">${chips}</div>`;
+}
+function placeBlank(b){
+  const st = S(APP.level, APP.q); if (st.done || st.es[b]) return;
+  if (st.sel != null){ st.place[b] = st.sel; st.sel = null; }
+  else if (st.place[b] != null) delete st.place[b];
+  render();
+}
+
+/* ---------- Chasse aux erreurs ---------- */
+function rChasse(l,i,Q,st){
+  const ss = Q.sentences.map((s,k) => {
+    const es = st.es[k] || ''; let c = es, mk = '';
+    if (!es && st.flags[k]) { c = 'flag'; mk = '✕'; }
+    if (es === 'g' || es === 'o') mk = '✓';
+    if (es === 'r') mk = '!';
+    if (es === 'v') mk = '✓';
+    let note = '';
+    if ((es === 'g' || es === 'o' || es === 'r') && s.fix) note = `<span class="fix">✏️ ${s.fix}</span>`;
+    if (es === 'v') note = `<span class="fix">Cette phrase est juste : fausse alerte.</span>`;
+    const dis = st.done || es;
+    return `<button class="sent ${c}" data-i="${k}" ${dis?'disabled':''} onclick="toggleFlag(${k})"><span class="mk">${mk}</span><span>« ${s.t} »${note}</span></button>`; }).join('');
+  return `<div class="qtext">${Q.q}</div>${renderDoc(Q, st, true)}<div class="sents">${ss}</div>`;
+}
+function toggleFlag(k){ const st = S(APP.level, APP.q); if (st.done || st.es[k]) return; st.flags[k] = !st.flags[k]; render(); }
+
+/* ---------- Facture à compléter ---------- */
+function fieldHTML(f, st, ro){
+  if (ro) return fmt(f);
+  if (typeof f === 'number') return fmt(f);
+  const s = st.fs[f.id];
+  if (s === 'g' || s === 'o') return `<span class="fld ${s}">${fmt(f.ans)}</span>`;
+  if (s === 'r') return `<span class="fld r"><s>${esc(st.vals[f.id]||'—')}</s>${fmt(f.ans)}</span>`;
+  return `<input class="fld${st.bad[f.id]?' bad':''}" data-f="${f.id}" inputmode="decimal" autocomplete="off" aria-label="${esc(f.label)}" value="${esc(st.vals[f.id]||'')}" oninput="onFld(this)" onfocus="onFld(this)">`;
+}
+function renderDoc(Q, st, ro){
+  const d = Q.doc, showRate = !!d.showRate;
+  const cell = t => (typeof t === 'number') ? fmt(t) : fieldHTML(t, st, false);
+  let h = `<div class="paper-wrap"><div class="paper" style="--vc:${d.vendor.color}">
+  <div class="pp-top">
+    <div class="pp-vendor"><div class="pp-logo">${d.vendor.logo}</div><div><div class="pp-vname">${esc(d.vendor.name)}</div>
+      <div class="pp-small">${d.vendor.addr.map(esc).join('<br>')}</div>
+      <div class="pp-small">BCE ${d.vendor.bce} · TVA BE ${d.vendor.bce}</div></div></div>
+    <div class="pp-kind"><div class="pp-title">${d.kind}</div><table class="pp-meta">${d.meta.map(m => `<tr><td>${m[0]}</td><td>${m[1]}</td></tr>`).join('')}</table></div>
+  </div>
+  <div class="pp-mid"><div class="pp-client"><div class="pp-lbl">Client</div><b>${esc(d.client.name)}</b><br>${d.client.addr.map(esc).join('<br>')}<br>TVA ${d.client.tva}</div></div>
+  ${d.cond ? `<div class="pp-cond">${d.cond}</div>` : ''}
+  <table class="inv"><thead><tr><th class="l">Désignation</th><th>Qté</th><th>P.U. HTVA</th>${showRate?'<th>TVA</th>':''}<th>Montant HTVA</th></tr></thead><tbody>
+  ${d.lines.map(x => `<tr><td class="l">${x.d}</td><td>${x.q}</td><td>${fmt(x.pu)}</td>${showRate?`<td>${x.rate} %</td>`:''}<td>${cell(x.t)}</td></tr>`).join('')}
+  </tbody></table>`;
+  if (d.extra){
+    h += `<div class="pp-sub">${d.extraTitle}</div><table class="inv"><tbody>${d.extra.map(x => `<tr><td class="l">${x.d}</td><td>${x.q} ×</td><td>${fmt(x.pu)}</td></tr>`).join('')}</tbody></table>`;
+  }
+  if (d.recap){
+    h += `<div class="pp-bottom"><table class="recap">${d.recap.map(r => `<tr class="${r.tot?'tot':''}"><td>${r.label}</td><td>${r.f ? cell(r.f) : fmt(r.v)}</td></tr>`).join('')}</table></div>`;
+  }
+  if (d.recap2){
+    const R = d.recap2;
+    h += `<div class="pp-bottom"><table class="recap"><tr><th></th>${R.heads.map(x => `<th>${x}</th>`).join('')}</tr>
+      ${R.rows.map(r => `<tr><td>${r.label}</td>${r.cells.map(c => `<td>${c ? cell(c) : ''}</td>`).join('')}</tr>`).join('')}
+      ${R.after.map(r => `<tr class="${r.tot?'tot':''}"><td>${r.label}</td><td colspan="${R.heads.length}">${cell(r.f)}</td></tr>`).join('')}
+    </table></div>`;
+  }
+  h += `<div class="pp-foot"><span>IBAN ${d.vendor.iban}</span><span>${d.foot||''}</span></div></div></div>`;
+  return h;
+}
+function rFacture(l,i,Q,st){
+  return `<div class="qtext">${Q.q}</div>${renderDoc(Q, st, false)}
+  ${st.done ? '' : `<div class="calcbar" id="calcbar">🧮 Tape un nombre ou un calcul (par ex. 15*28) dans une case jaune.</div>`}`;
+}
+function onFld(el){
+  const st = S(APP.level, APP.q); const id = el.dataset.f;
+  st.vals[id] = el.value;
+  if (st.bad[id] && el.classList){ /* l'élève corrige : on garde le rouge jusqu'à la vérification */ }
+  const bar = document.getElementById('calcbar'); if (!bar) return;
+  const r = evalExpr(el.value);
+  bar.innerHTML = r === null ? `🧮 ${esc(el.getAttribute('aria-label'))} : ${el.value ? esc(el.value) : '…'}` : `🧮 ${esc(el.getAttribute('aria-label'))} : ${prettyExpr(el.value)} → = <b>${fmt(r)}</b>`;
+}
+
+/* ============================================================
+   VÉRIFICATION
+   ============================================================ */
+function check(){
+  const l = APP.level, i = APP.q, Q = getQ(l,i), st = S(l,i);
+  if (st.done) return;
+  switch (Q.type){
+    case 'reponse': return chkReponse(l,i,Q,st);
+    case 'qcm': return chkQcm(l,i,Q,st);
+    case 'sm': return chkSm(l,i,Q,st);
+    case 'classement': return chkClassement(l,i,Q,st);
+    case 'appariement': return chkAppariement(l,i,Q,st);
+    case 'ordre': return chkOrdre(l,i,Q,st);
+    case 'trous': return chkTrous(l,i,Q,st);
+    case 'chasse': return chkChasse(l,i,Q,st);
+    case 'facture': return chkFacture(l,i,Q,st);
+  }
+}
+function info(st, html){ st.fb = { kind:'info', html }; render(); }
+function firstFail(st, html){ st.att = 1; APP.streak = 0; st.fb = { kind:'hint', html }; render(); shake(); sfx('ko'); }
+
+function chkReponse(l,i,Q,st){
+  const v = parseNum(st.val || '');
+  if (!isFinite(v)) return info(st, "✍️ Écris un nombre (ou un calcul) avant de vérifier.");
+  const ok = near(v, Q.ans);
+  if (ok){ const p = st.att === 0 ? Q.pts : Q.pts/2;
+    return finishQ(l,i, st.att === 0 ? 'correct' : 'hint', p, st.att === 0 ? Q.pts : 0, `✅ <b>Juste${st.att?' au deuxième essai':''}.</b> ${Q.expl}`); }
+  if (st.att === 0) return firstFail(st, `🤔 <b>Pas encore.</b> ${Q.hint}`);
+  finishQ(l,i,'shown',0,0, `❌ La bonne réponse était <b>${fmt(Q.ans)} ${Q.unit||''}</b>. ${Q.expl}`);
+}
+function chkQcm(l,i,Q,st){
+  if (st.sel == null) return info(st, "👆 Choisis une proposition avant de vérifier.");
+  if (st.sel === Q.correct){ return finishQ(l,i, st.att === 0 ? 'correct' : 'hint', st.att === 0 ? Q.pts : Q.pts/2, st.att === 0 ? Q.pts : 0, `✅ <b>Juste${st.att?' au deuxième essai':''}.</b> ${Q.expl}`); }
+  if (st.att === 0){ st.elim[st.sel] = true; st.sel = null; return firstFail(st, `🤔 <b>Pas encore.</b> ${Q.hint}`); }
+  finishQ(l,i,'shown',0,0, `❌ La bonne réponse : <b>${Q.options[Q.correct]}</b>. ${Q.expl}`);
+}
+function ansVF(v){
+  const l = APP.level, i = APP.q, Q = getQ(l,i), st = S(l,i); if (st.done) return;
+  st.sel = v;
+  if (v === Q.ans) finishQ(l,i,'correct',Q.pts,Q.pts, `✅ <b>Juste : c'est ${Q.ans?'vrai':'faux'}.</b> ${Q.expl}`);
+  else { APP.streak = 0; finishQ(l,i,'shown',0,0, `❌ <b>C'est ${Q.ans?'vrai':'faux'}.</b> ${Q.expl}`); shake(); }
+}
+function chkSm(l,i,Q,st){
+  const sel = Q.options.map((_,k) => !!st.smSel[k]);
+  if (!sel.some(Boolean)) return info(st, "☑️ Coche au moins une proposition avant de vérifier.");
+  const ok = Q.options.every((o,k) => o.ok === sel[k]);
+  if (ok) return finishQ(l,i, st.att === 0 ? 'correct' : 'hint', st.att === 0 ? Q.pts : Q.pts/2, st.att === 0 ? Q.pts : 0, `✅ <b>Juste${st.att?' au deuxième essai':''}.</b> ${Q.expl}`);
+  if (st.att === 0) return firstFail(st, `🤔 <b>Pas tout à fait.</b> ${Q.hint}`);
+  finishQ(l,i,'shown',0,0, `❌ Les bonnes réponses sont en vert ; celles que tu as oubliées sont en pointillés. ${Q.expl}`);
+}
+
+/* Barème par élément (§3.8) — factorisé */
+function itemFinish(l,i,Q,st,n){
+  const val = Q.pts / n; let g = 0, o = 0, r = 0;
+  for (let e = 0; e < n; e++){ const s = st.es[e]; if (s === 'g') g++; else if (s === 'o') o++; else r++; }
+  const earned = g*val + o*val/2, first = g*val;
+  const status = r ? 'shown' : (o ? 'hint' : 'correct');
+  const head = status === 'correct' ? `✅ <b>Tout est juste du premier coup.</b>` : status === 'hint' ? `🔄 <b>Tout est juste après correction</b> (${o} élément${o>1?'s':''} corrigé${o>1?'s':''}).` : `👁 <b>${g + o} élément${g+o>1?'s':''} juste${g+o>1?'s':''} sur ${n}.</b> Les corrections sont affichées.`;
+  finishQ(l,i,status,earned,first, `${head} ${Q.expl}`);
+}
+function elemCheck(l,i,Q,st,n,isOk,clear){
+  if (st.att === 0){
+    let g = 0;
+    for (let e = 0; e < n; e++){ if (isOk(e)){ st.es[e] = 'g'; g++; } else clear(e); }
+    if (g === n) return itemFinish(l,i,Q,st,n);
+    return firstFail(st, `🤔 <b>${g} élément${g>1?'s':''} juste${g>1?'s':''} sur ${n}</b> : ils sont verrouillés en vert. Les autres sont revenus à leur place de départ. <b>Indice :</b> ${Q.hint}`);
+  }
+  for (let e = 0; e < n; e++){ if (!st.es[e]) st.es[e] = isOk(e) ? 'o' : 'r'; }
+  itemFinish(l,i,Q,st,n);
+}
+function chkClassement(l,i,Q,st){
+  const n = Q.items.length;
+  if (Q.items.some((_,e) => st.place[e] == null)) return info(st, "📥 Range toutes les étiquettes avant de vérifier.");
+  elemCheck(l,i,Q,st,n, e => st.place[e] === Q.items[e].z, e => { delete st.place[e]; st.bounced[e] = true; });
+}
+function chkAppariement(l,i,Q,st){
+  const n = Q.pairs.length;
+  if (Q.pairs.some((_,e) => st.place[e] == null)) return info(st, "🔽 Choisis un calcul pour chaque situation avant de vérifier.");
+  elemCheck(l,i,Q,st,n, e => Q._pool[st.place[e]] === Q.pairs[e].r, e => { delete st.place[e]; });
+}
+function chkOrdre(l,i,Q,st){
+  const n = Q.steps.length;
+  if (Q.steps.some((_,s) => st.place[s] == null)) return info(st, "🔢 Remplis tous les emplacements avant de vérifier.");
+  elemCheck(l,i,Q,st,n, s => st.place[s] === s, s => { st.bounced[st.place[s]] = true; delete st.place[s]; });
+}
+function chkTrous(l,i,Q,st){
+  const n = Q.answers.length;
+  if (Q.answers.some((_,b) => st.place[b] == null)) return info(st, "🧩 Remplis tous les trous avant de vérifier.");
+  elemCheck(l,i,Q,st,n, b => Q._bank[st.place[b]] === Q.answers[b], b => { st.bounced[st.place[b]] = true; delete st.place[b]; });
+}
+function chkChasse(l,i,Q,st){
+  const errs = Q.sentences.map((s,k) => s.err ? k : -1).filter(k => k >= 0), n = errs.length, val = Q.pts / n;
+  const flagged = Q.sentences.map((_,k) => k).filter(k => st.flags[k] && !st.es[k]);
+  if (!flagged.length && st.att === 0) return info(st, "🔍 Clique sur au moins une phrase que tu crois fausse avant de vérifier.");
+  let fa = 0;
+  flagged.forEach(k => { if (Q.sentences[k].err) st.es[k] = st.att === 0 ? 'g' : 'o'; else { st.es[k] = 'v'; fa++; } st.flags[k] = false; });
+  st.fa += fa; if (st.att === 0) st.fa1 = fa;
+  const g = errs.filter(k => st.es[k] === 'g').length, o = errs.filter(k => st.es[k] === 'o').length;
+  const allFound = g + o === n;
+  if (st.att === 0 && !allFound){
+    return firstFail(st, `🤔 <b>Tu as trouvé ${g} erreur${g>1?'s':''} sur ${n}.</b>${fa ? ` ${fa} fausse${fa>1?'s':''} alerte${fa>1?'s':''} : −${fa} XP.` : ''} <b>Indice :</b> ${Q.hint}`);
+  }
+  errs.forEach(k => { if (!st.es[k]) st.es[k] = 'r'; });
+  const r = errs.filter(k => st.es[k] === 'r').length;
+  const earned = Math.max(0, g*val + o*val/2 - st.fa), first = Math.max(0, g*val - (st.fa1||0));
+  const status = r ? 'shown' : (o || st.fa ? 'hint' : 'correct');
+  const head = status === 'correct' ? `✅ <b>Les ${n} erreurs trouvées du premier coup, sans fausse alerte.</b>` :
+    `${r ? '👁' : '🔄'} <b>${g+o} erreur${g+o>1?'s':''} trouvée${g+o>1?'s':''} sur ${n}</b>${st.fa ? ` · ${st.fa} fausse${st.fa>1?'s':''} alerte${st.fa>1?'s':''} (−${st.fa} XP)` : ''}.`;
+  finishQ(l,i,status,earned,first, `${head} ${Q.expl}`);
+}
+function chkFacture(l,i,Q,st){
+  const fields = docFields(Q.doc);
+  const open = fields.filter(f => !st.fs[f.id]);
+  const empty = open.filter(f => !isFinite(parseNum(st.vals[f.id] || '')));
+  if (empty.length) return info(st, `✍️ Remplis toutes les cases jaunes avant de vérifier (${empty.length} case${empty.length>1?'s':''} vide${empty.length>1?'s':''} ou illisible${empty.length>1?'s':''}).`);
+  const n = fields.length;
+  const ok = f => near(parseNum(st.vals[f.id]), f.ans);
+  if (st.att === 0){
+    let g = 0; st.bad = {}; let firstWrong = null;
+    fields.forEach(f => { if (ok(f)){ st.fs[f.id] = 'g'; g++; } else { st.bad[f.id] = true; if (!firstWrong) firstWrong = f; } });
+    if (g === n) return factureFinish(l,i,Q,st,fields);
+    return firstFail(st, `🤔 <b>${g} case${g>1?'s':''} juste${g>1?'s':''} sur ${n}</b> : elles sont verrouillées en vert. Corrige les cases en rouge.<br><b>Indice — ${firstWrong.label} :</b> ${firstWrong.hint}${
+      fields.indexOf(firstWrong) < n - 1 ? ' <i>Les cases qui suivent dépendent souvent de celle-ci.</i>' : ''}`);
+  }
+  fields.forEach(f => { if (!st.fs[f.id]) st.fs[f.id] = ok(f) ? 'o' : 'r'; });
+  st.bad = {};
+  factureFinish(l,i,Q,st,fields);
+}
+function factureFinish(l,i,Q,st,fields){
+  const n = fields.length, val = Q.pts / n;
+  const g = fields.filter(f => st.fs[f.id] === 'g').length, o = fields.filter(f => st.fs[f.id] === 'o').length, r = n - g - o;
+  const status = r ? 'shown' : (o ? 'hint' : 'correct');
+  const head = status === 'correct' ? `✅ <b>Facture parfaite : toutes les cases sont justes du premier coup.</b>` :
+    status === 'hint' ? `🔄 <b>Toutes les cases sont justes après correction.</b>` : `👁 <b>${g+o} case${g+o>1?'s':''} juste${g+o>1?'s':''} sur ${n}.</b> Les bonnes valeurs sont affichées en rouge.`;
+  const steps = `<div class="steps">${fields.map(f => `${f.label} : ${f.expl}`).join('<br>')}</div>`;
+  finishQ(l,i,status, g*val + o*val/2, g*val, `${head}<br>Le calcul complet :${steps}`);
+}
+
+/* ============================================================
+   FIN DE QUESTION, FIN DE MISSION
+   ============================================================ */
+function finishQ(l,i,status,earned,first,html){
+  const st = S(l,i);
+  st.done = true; st.status = status; st.earned = earned; st.firstPts = first;
+  st.fb = { kind: status === 'correct' ? 'ok' : status === 'hint' ? 'mid' : 'ko', html };
+  APP.score += earned;
+  if (status === 'correct'){ APP.streak++; APP.bestStreak = Math.max(APP.bestStreak, APP.streak); }
+  else APP.streak = 0;
+  render();
+  if (earned > 0){ particles(); floatXP('+' + earned + ' XP'); sfx('ok'); }
+  if (status === 'correct' && APP.streak >= 3) combo(APP.streak);
+  const Q = getQ(l,i);
+  if (Q.type === 'facture' && status === 'correct') award('b2');
+  if (l === 2 && i === 2 && status === 'correct') award('b3');
+  if (Q.type === 'chasse' && status === 'correct') award('b4');
+  if (APP.streak >= 5) award('b5');
+  if (Q.defi && earned / Q.pts >= 0.8) award('b6');
+  checkRank();
+}
+function predCat(r){ return r >= 0.875 ? 1 : r >= 0.625 ? 0.75 : 0.5; }
+function finishLevel(l){
+  const lv = LEVELS[l]; const qs = lv.questions.map((_,i) => S(l,i));
+  const counts = { correct:0, hint:0, shown:0 };
+  qs.forEach(s => counts[s.status]++);
+  const earned = qs.reduce((t,s) => t + s.earned, 0), first = qs.reduce((t,s) => t + s.firstPts, 0);
+  APP.done[l] = { earned, max:lv.maxPoints, first, counts, n:qs.length };
+  completeExercise(l);
+  if (l === 0) award('b1');
+  if (predCat(counts.correct / qs.length) === APP.pred[l]) award('b7');
+  if (LEVELS.every((_,k) => APP.done[k])) award('b8');
+  APP.level = l; setScreen('bilan');
+  if (first / lv.maxPoints >= 0.7) confetti();
+  sfx('level');
+}
+function gradeOf(r){ return r >= 0.85 ? ['A','Excellent','Tu maîtrises : garde ce rythme.'] : r >= 0.65 ? ['B','Très bien','Quelques détails à revoir dans les corrections.'] : r >= 0.45 ? ['C','Satisfaisant','Relis les corrections avant de continuer.'] : ['D','À retravailler','Reprends ton cours et les corrections, puis refais les calculs sur papier.']; }
+function medalOf(r){ return r >= 0.9 ? '🏆' : r >= 0.7 ? '🥇' : r >= 0.5 ? '🥈' : '🥉'; }
+function legend(){ return `<div class="legend"><span><span class="dot" style="background:var(--success)"></span>Juste du 1er coup</span><span><span class="dot" style="background:var(--orange)"></span>Corrigé au 2e essai</span><span><span class="dot" style="background:var(--error)"></span>Réponse montrée</span></div>`; }
+function renderBilan(l){
+  const lv = LEVELS[l], d = APP.done[l]; if (!d) return renderHub();
+  const r1 = d.first / d.max, g = gradeOf(r1);
+  const p = PRED.find(x => x.v === APP.pred[l]);
+  const real = predCat(d.counts.correct / d.n);
+  let predTxt = '';
+  if (p){ predTxt = `Tu avais prédit <b>${p.n}</b> ; tu as réussi <b>${d.counts.correct}/${d.n}</b> questions du premier coup. ` +
+    (real === p.v ? "Bonne estimation, tu te connais bien !" : real > p.v ? "Tu as fait mieux que prévu : tu peux avoir davantage confiance en toi." : "C'était plus difficile que prévu : relis bien les corrections affichées."); }
+  const rows = lv.questions.map((q,i) => { const s = S(l,i); const ic = s.status === 'correct' ? '✅' : s.status === 'hint' ? '🔄' : '👁';
+    return `<tr><td>${i+1}. ${qLabel(q).split(' — ')[0]}</td><td class="n">${ic}</td><td class="n">${s.earned}/${q.pts}</td></tr>`; }).join('');
+  const last = l === LEVELS.length - 1;
+  return `<section class="screen"><div class="panel">
+    <div class="medal">${medalOf(r1)}</div>
+    <div class="grade">Mission ${l+1} terminée — ${g[0]} · ${g[1]}</div>
+    <div class="stars">${starsFor(d.earned/d.max)}</div>
+    <p style="text-align:center;color:var(--text2);margin-top:4px">${d.earned}/${d.max} XP · réussite au 1er essai : ${Math.round(r1*100)} % · ${g[2]}</p>
+    ${legend()}
+    <table class="res"><tr><th>Question</th><th style="text-align:center">Résultat</th><th style="text-align:center">XP</th></tr>${rows}
+    <tr><td><b>Total</b> : ✅ ${d.counts.correct} · 🔄 ${d.counts.hint} · 👁 ${d.counts.shown}</td><td></td><td class="n"><b>${d.earned}/${d.max}</b></td></tr></table>
+    ${predTxt ? `<div class="predline">🔮 ${predTxt}</div>` : ''}
+    <div class="btnrow c">
+      ${last ? `<button class="btn gold" id="btnNextLv" onclick="setScreen('hub')">Voir mon bilan final ➜</button>` : `<button class="btn" id="btnNextLv" onclick="openBrief(${l+1})">Mission suivante ➜</button>`}
+      <button class="btn ghost" onclick="setScreen('hub')">🗺️ Parcours</button>
+    </div></div></section>`;
+}
+
+/* Bilan par critères et indicateurs (§4.11) */
+function bilanIndicateurs(){
+  const acc = {};
+  LEVELS.forEach((lv,l) => lv.questions.forEach((q,i) => {
+    const a = acc[q.ind] || (acc[q.ind] = { pts:0, max:0 });
+    a.max += q.pts; a.pts += (APP.qs[key(l,i)] && APP.qs[key(l,i)].earned) || 0;
+  }));
+  const statut = r => r >= 0.8 ? 'atteint' : r >= 0.5 ? 'encours' : 'nonatteint';
+  return CRITERES.map(c => {
+    const inds = c.indicateurs.map(ind => { const a = acc[ind.id] || { pts:0, max:0 }; const r = a.max ? a.pts/a.max : 0; return Object.assign({}, ind, { ratio:r, statut:statut(r) }); });
+    const tot = c.indicateurs.reduce((t,ind) => { const a = acc[ind.id] || { pts:0, max:0 }; return { pts:t.pts + a.pts, max:t.max + a.max }; }, { pts:0, max:0 });
+    const r = tot.max ? tot.pts/tot.max : 0;
+    return { id:c.id, nom:c.nom, ratio:r, statut:statut(r), indicateurs:inds };
+  });
+}
+const ST_LBL = { atteint:'✅ Atteint', encours:'🟠 En cours d\'acquisition', nonatteint:'❌ Non atteint' };
+function renderFinal(){
+  const tot = LEVELS.reduce((t,_,l) => { const d = APP.done[l]; return { e:t.e + d.earned, m:t.m + d.max, f:t.f + d.first, c:t.c + d.counts.correct, h:t.h + d.counts.hint, s:t.s + d.counts.shown }; }, { e:0, m:0, f:0, c:0, h:0, s:0 });
+  const r1 = tot.f / tot.m, g = gradeOf(r1), rk = RANKS[rankIndex(APP.score)];
+  const name = APP.email ? APP.email.split('@')[0].split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
+  const today = new Date().toLocaleDateString('fr-BE');
+  const crit = bilanIndicateurs();
+  const allOk = crit.every(c => c.indicateurs.every(i => i.statut === 'atteint'));
+  const rows = LEVELS.map((lv,l) => { const d = APP.done[l]; return `<tr><td>${lv.icon} Mission ${l+1}</td><td class="n">${d.counts.correct}</td><td class="n">${d.counts.hint}</td><td class="n">${d.counts.shown}</td><td class="n">${starsFor(d.earned/d.max)}</td><td class="n">${d.earned}/${d.max}</td></tr>`; }).join('');
+  setTimeout(() => { if (r1 >= 0.7 && !APP.finalConfetti){ APP.finalConfetti = true; confetti(); } }, 300);
+  return `<div class="panel final fiche" id="finalBilan">
+    <div class="medal">${medalOf(r1)}</div>
+    <div class="grade">Parcours terminé — ${g[0]} · ${g[1]}</div>
+    <p style="text-align:center;color:var(--text2)">${name ? esc(name) + ' · ' : ''}${today} · ${tot.e}/${tot.m} XP · réussite au 1er essai : ${Math.round(r1*100)} %<br>Rang atteint : ${rk.icon} ${rk.name} · meilleure série : ${APP.bestStreak} · badges : ${APP.badges.size}/${BADGES.length}</p>
+    ${legend()}
+    <table class="res"><tr><th>Mission</th><th style="text-align:center">✅</th><th style="text-align:center">🔄</th><th style="text-align:center">👁</th><th style="text-align:center">Étoiles</th><th style="text-align:center">XP</th></tr>${rows}
+    <tr><td><b>Total</b></td><td class="n"><b>${tot.c}</b></td><td class="n"><b>${tot.h}</b></td><td class="n"><b>${tot.s}</b></td><td></td><td class="n"><b>${tot.e}/${tot.m}</b></td></tr></table>
+    <h3 style="margin-top:18px;font-size:1.1rem">📋 Ce que tu maîtrises</h3>
+    ${crit.map(c => `<div class="crit"><h4><span>${c.id} — ${c.nom}</span><span class="st ${c.statut}">${ST_LBL[c.statut]}</span></h4>
+      ${c.indicateurs.map(i => `<div class="ind"><span>${i.texte}</span><span class="st ${i.statut}">${ST_LBL[i.statut]}</span></div>
+        ${i.statut !== 'atteint' ? `<div class="rev">📖 À revoir dans ton cours : <i>${i.chapitre}</i> — ${i.revoir}.</div>` : ''}`).join('')}</div>`).join('')}
+    ${allOk ? `<p class="predline">🎉 Tous les indicateurs sont atteints : tu sais compléter et rectifier une facture. Bravo pour ce travail régulier !</p>` : ''}
+    <div class="btnrow c noprint">
+      <button class="btn ghost" onclick="window.print()">🖨️ Imprimer mon bilan</button>
+      <button class="lbbtn app" onclick="openLB('app')">🏆 Classement</button>
+      <button class="lbbtn glob" onclick="openLB('global')">🌍 Général</button>
+      <button class="btn orange" id="btnReplay" onclick="restartGame()">🔁 Rejouer</button>
+    </div></div>`;
+}
+
+/* ============================================================
+   HUD, RANGS, BADGES
+   ============================================================ */
+function rankIndex(score){ let k = 0; RANKS.forEach((r,i) => { if (score >= Math.ceil(r.p * TOTAL_XP)) k = i; }); return k; }
+function updateHUD(){
+  document.getElementById('hudXP').textContent = '⭐ ' + APP.score + ' XP';
+  const s = document.getElementById('hudStreak'); s.textContent = '🔥 ' + APP.streak; s.classList.toggle('hot', APP.streak >= 3);
+  const k = rankIndex(APP.score), rk = RANKS[k];
+  document.getElementById('xpRank').textContent = rk.icon + ' ' + rk.name;
+  document.getElementById('xpFill').style.width = Math.min(100, APP.score / TOTAL_XP * 100) + '%';
+  const nx = RANKS[k+1];
+  document.getElementById('xpNext').textContent = nx ? `prochain rang à ${Math.ceil(nx.p * TOTAL_XP)} XP` : 'rang maximal atteint';
+  const tr = document.getElementById('xpTrack');
+  tr.querySelectorAll('.xpmark').forEach(x => x.remove());
+  RANKS.slice(1).forEach(r => { const m = document.createElement('span'); m.className = 'xpmark'; m.style.left = (r.p*100) + '%'; m.title = r.name; tr.appendChild(m); });
+  document.getElementById('hudLv').innerHTML = LEVELS.map((_,l) => {
+    const c = APP.done[l] ? 'done' : (!isUnlocked(l) ? 'locked' : (APP.level === l && (APP.screen === 'question' || APP.screen === 'brief') ? 'cur' : ''));
+    return `<span class="lvpip ${c}" title="Mission ${l+1}">${APP.done[l] ? '✓' : (isUnlocked(l) ? l+1 : '🔒')}</span>`; }).join('');
+}
+function checkRank(){
+  const k = rankIndex(APP.score);
+  if (k > APP.rankIdx){ APP.rankIdx = k; const rk = RANKS[k];
+    document.getElementById('rankIcon').textContent = rk.icon; document.getElementById('rankName').textContent = rk.name;
+    document.getElementById('rankMsg').textContent = `Tu as dépassé ${Math.ceil(rk.p*TOTAL_XP)} XP. ${k < RANKS.length-1 ? 'Continue pour monter encore en grade !' : 'Tu as atteint le plus haut rang du service.'}`;
+    document.getElementById('rankOv').classList.add('show'); confetti(); sfx('level'); }
+}
+function closeRank(){ document.getElementById('rankOv').classList.remove('show'); }
+const toastQ = []; let toastBusy = false;
+function award(id){
+  if (APP.badges.has(id)) return; APP.badges.add(id);
+  const b = BADGES.find(x => x.id === id); toastQ.push(b); nextToast(); sfx('badge');
+}
+function nextToast(){
+  if (toastBusy || !toastQ.length) return; toastBusy = true; const b = toastQ.shift();
+  document.getElementById('toastIcon').textContent = b.icon; document.getElementById('toastText').textContent = b.name + ' — ' + b.cond;
+  const t = document.getElementById('toast'); t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => { toastBusy = false; nextToast(); }, 400); }, 3000);
+}
+
+/* ============================================================
+   EFFETS (déclenchés par l'action de l'élève)
+   ============================================================ */
+document.addEventListener('pointerdown', e => { APP.lastXY = [e.clientX, e.clientY]; }, true);
+function origin(){ if (APP.lastXY) return APP.lastXY; return [window.innerWidth/2, window.innerHeight/2]; }
+function particles(){
+  const [x,y] = origin(); const cols = ['#22d68a','#ffc94d','#ff8a3d','#5aa9ff'];
+  for (let k = 0; k < 16; k++){ const p = document.createElement('span'); p.className = 'particle';
+    const a = Math.random()*Math.PI*2, d = 40 + Math.random()*60;
+    p.style.left = x + 'px'; p.style.top = y + 'px'; p.style.background = cols[k%4];
+    p.style.setProperty('--dx', Math.cos(a)*d + 'px'); p.style.setProperty('--dy', Math.sin(a)*d + 'px');
+    document.body.appendChild(p); setTimeout(() => p.remove(), 900); }
+}
+function floatXP(t){ const [x,y] = origin(); const f = document.createElement('span'); f.className = 'floatxp'; f.textContent = t; f.style.left = (x - 20) + 'px'; f.style.top = (y - 30) + 'px'; document.body.appendChild(f); setTimeout(() => f.remove(), 1200); }
+function combo(n){ const c = document.createElement('div'); c.className = 'combo'; c.textContent = n >= 10 ? '⚡ INARRÊTABLE ×' + n : n >= 5 ? '🔥 EN FEU ×' + n : '🔥 COMBO ×' + n; document.body.appendChild(c); setTimeout(() => c.remove(), 1200); }
+function confetti(){
+  const cols = ['#22d68a','#ffc94d','#ff8a3d','#5aa9ff','#ff4060'];
+  for (let k = 0; k < 70; k++){ const c = document.createElement('span'); c.className = 'confetti';
+    c.style.left = Math.random()*100 + 'vw'; c.style.background = cols[k%5]; c.style.animationDuration = (2 + Math.random()*1.8) + 's'; c.style.animationDelay = (Math.random()*0.4) + 's';
+    document.body.appendChild(c); setTimeout(() => c.remove(), 4500); }
+}
+function shake(){ const c = document.getElementById('qcard'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+
+/* Sons Web Audio — coupés par défaut (§4.10) */
+let AC = null;
+function tone(freq, start, dur, type, vol){
+  if (!AC) return; const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type || 'sine'; o.frequency.value = freq; g.gain.value = vol || 0.08;
+  o.connect(g); g.connect(AC.destination); const t = AC.currentTime + start;
+  o.start(t); g.gain.setValueAtTime(vol || 0.08, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.stop(t + dur + 0.02);
+}
+function sfx(kind){
+  if (!APP.sound || !AC) return;
+  if (kind === 'ok'){ tone(660,0,.12); tone(990,.1,.16); }
+  else if (kind === 'ko'){ tone(220,0,.18,'triangle',.06); }
+  else if (kind === 'badge'){ tone(784,0,.12); tone(988,.1,.12); tone(1319,.2,.2); }
+  else if (kind === 'level'){ tone(523,0,.12); tone(659,.1,.12); tone(784,.2,.12); tone(1047,.3,.25); }
+}
+function toggleSound(){
+  APP.sound = !APP.sound;
+  if (APP.sound && !AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ APP.sound = false; } }
+  document.getElementById('btnSound').textContent = APP.sound ? '🔊' : '🔇';
+  if (APP.sound) sfx('ok');
+}
+
+/* ============================================================
+   REJOUER
+   ============================================================ */
+function resetState(){
+  APP.qs = {}; APP.score = 0; APP.streak = 0; APP.bestStreak = 0; APP.done = {}; APP.completed = new Set();
+  APP.pred = {}; APP.badges = new Set(); APP.rankIdx = 0; APP.level = null; APP.q = 0; APP.finalConfetti = false;
+  APP.exerciseTimes = {}; APP.exerciseScores = {}; APP.scoreBeforeExercise = 0; APP.exerciseStartTime = null; APP.timerLevel = null;
+}
+function restartGame(){
+  TRACKING.sessionId = new Date().toISOString();   // ⚠️ nouvelle session
+  resetState();
+  APP.globalTimerStart = Date.now();
+  setScreen('hub');
+}
+
+/* ============================================================
+   TRACKING — Modal Email
+   ============================================================ */
+function showEmailModal(){
+  const overlay = document.getElementById('emailOverlay');
+  overlay.style.display = 'flex';
+  const input = document.getElementById('emailInput');
+  const saved = localStorage.getItem('student_email');
+  if (saved) input.value = saved;
+  input.focus();
+  document.getElementById('emailError').textContent = '';
+}
+function validateEmail(){
+  const input = document.getElementById('emailInput');
+  const btn = document.getElementById('emailBtn');
+  const errDiv = document.getElementById('emailError');
+  const email = input.value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errDiv.textContent = '⚠️ Entre une adresse email valide.'; input.style.borderColor = '#ff4060'; return;
+  }
+  btn.textContent = '⏳ Vérification…'; btn.disabled = true; errDiv.textContent = ''; input.style.borderColor = '';
+  const cbName = '_emailCb_' + Date.now();
+  const timeout = setTimeout(() => {
+    delete window[cbName]; const s = document.getElementById(cbName); if (s) s.remove();
+    errDiv.textContent = '⚠️ Connexion impossible. Vérifie ta connexion internet.';
+    btn.textContent = '✅ Vérifier et commencer'; btn.disabled = false;
+  }, 10000);
+  window[cbName] = function(resp){
+    clearTimeout(timeout); delete window[cbName];
+    const s = document.getElementById(cbName); if (s) s.remove();
+    btn.textContent = '✅ Vérifier et commencer'; btn.disabled = false;
+    if (resp && resp.found){
+      const oldEmail = localStorage.getItem('student_email');
+      localStorage.setItem('student_email', email);
+      localStorage.setItem('student_classe', resp.classe || '');
+      APP.email = email; APP.classe = resp.classe || '';
+      if (oldEmail && oldEmail !== email) resetProgression();
+      TRACKING.sessionId = new Date().toISOString();
+      document.getElementById('emailOverlay').style.display = 'none';
+      startGlobalTimer();
+      onEmailValidated();
+    } else {
+      errDiv.textContent = "⚠️ Cette adresse email n'est pas enregistrée. Vérifie l'orthographe ou demande à ton professeur de t'ajouter à la liste.";
+      input.style.borderColor = '#ff4060';
+    }
+  };
+  const s = document.createElement('script');
+  s.id = cbName;
+  s.src = `${TRACKING.scriptUrl}?action=check_email&email=${encodeURIComponent(email)}&callback=${cbName}`;
+  s.onerror = () => { clearTimeout(timeout); delete window[cbName]; s.remove(); errDiv.textContent = '⚠️ Erreur de connexion au serveur.'; btn.textContent = '✅ Vérifier et commencer'; btn.disabled = false; };
+  document.body.appendChild(s);
+}
+function onEmailValidated(){ APP.validated = true; if (APP.screen === 'welcome') render(); }
+function resetProgression(){ resetState(); console.log('[TRACKING] Progression réinitialisée (nouvel email)'); }
+
+/* TRACKING — Chronomètres */
+function startGlobalTimer(){
+  APP.globalTimerStart = Date.now();
+  const el = document.getElementById('globalTimer'); if (el) el.style.display = 'inline';
+  if (APP.globalTimerInterval) clearInterval(APP.globalTimerInterval);
+  APP.globalTimerInterval = setInterval(updateTimerDisplay, 1000); updateTimerDisplay();
+}
+function updateTimerDisplay(){
+  const el = document.getElementById('globalTimer'); if (!el || !APP.globalTimerStart) return;
+  const elapsed = Math.floor((Date.now() - APP.globalTimerStart) / 1000);
+  el.textContent = '⏱️ ' + String(Math.floor(elapsed/60)).padStart(2,'0') + ':' + String(elapsed%60).padStart(2,'0');
+}
+function startExerciseTimer(exIdx){ APP.exerciseStartTime = Date.now(); APP.scoreBeforeExercise = APP.score || 0; }
+function stopExerciseTimer(exIdx){
+  if (!APP.exerciseStartTime) return null;
+  const tempsSec = Math.round((Date.now() - APP.exerciseStartTime) / 1000);
+  APP.exerciseTimes[exIdx] = tempsSec; APP.exerciseStartTime = null; APP.timerLevel = null;
+  const deltaPoints = (APP.score || 0) - APP.scoreBeforeExercise;
+  APP.exerciseScores[exIdx] = deltaPoints;
+  return { points: deltaPoints, temps: tempsSec };
+}
+function completeExercise(idx){
+  if (APP.completed.has(idx)) return;      // anti-doublon
+  APP.completed.add(idx);
+  const result = stopExerciseTimer(idx);
+  if (result) sendResult(LEVELS[idx].trackName, result.points, LEVELS[idx].maxPoints, result.temps);
+}
+function formatTime(s){ const m = Math.floor(s/60); return m > 0 ? m + 'm' + String(s%60).padStart(2,'0') + 's' : s + 's'; }
+
+/* TRACKING — Envoi des résultats */
+function sendResult(niveau, points, pointsMax, temps){
+  if (!APP.email) return;
+  const payload = { email: APP.email, classe: APP.classe, app: TRACKING.appName, niveau, points, pointsMax, temps,
+    totalNiveaux: TRACKING.totalNiveaux, sessionId: TRACKING.sessionId };
+  console.log('[TRACKING] Envoi:', payload);
+  fetch(TRACKING.scriptUrl, { method:"POST", mode:"no-cors", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(payload) })
+    .catch(err => console.warn('[TRACKING] Erreur:', err));
+}
+
+/* TRACKING — Modal Classement */
+let currentLBTab = 'app';
+function openLB(tab){ document.getElementById('lbOverlay').style.display = 'block'; switchLBTab(tab || 'app'); }
+function closeLB(){ document.getElementById('lbOverlay').style.display = 'none'; }
+function switchLBTab(tab){
+  currentLBTab = tab;
+  const btnApp = document.getElementById('lbTabApp'), btnGlobal = document.getElementById('lbTabGlobal');
+  const cl = APP.classe ? ' (' + APP.classe + ')' : '';
+  document.getElementById('lbTitle').textContent = tab === 'app' ? '🏆 Classement — ' + TRACKING.appName + cl : '🌍 Classement général' + cl;
+  if (tab === 'app'){ btnApp.style.background = 'var(--accent)'; btnApp.style.color = '#0f1117'; btnGlobal.style.background = 'transparent'; btnGlobal.style.color = 'var(--orange)'; }
+  else { btnGlobal.style.background = 'var(--orange)'; btnGlobal.style.color = '#0f1117'; btnApp.style.background = 'transparent'; btnApp.style.color = 'var(--accent)'; }
+  fetchLeaderboard(tab);
+}
+function fetchLeaderboard(tab){
+  const content = document.getElementById('lbContent');
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);">⏳ Chargement…</div>';
+  const action = tab === 'app' ? 'leaderboard_app' : 'leaderboard_global';
+  const cbName = '_lbCb_' + Date.now();
+  const timeout = setTimeout(() => {
+    delete window[cbName]; const s = document.getElementById(cbName); if (s) s.remove();
+    content.innerHTML = '<div style="text-align:center;padding:40px;"><div style="color:#ff4060;margin-bottom:12px;">⚠️ Connexion impossible</div><button onclick="fetchLeaderboard(\'' + tab + '\')" style="padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-family:inherit;">Réessayer</button></div>';
+  }, 10000);
+  window[cbName] = function(resp){
+    clearTimeout(timeout); delete window[cbName];
+    const s = document.getElementById(cbName); if (s) s.remove();
+    const lbData = resp && (resp.leaderboard || resp.data);
+    if (!lbData || lbData.length === 0){ content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2);">🏁 Aucun résultat pour le moment</div>'; return; }
+    renderLeaderboard(lbData, tab);
+  };
+  let url = `${TRACKING.scriptUrl}?action=${action}&callback=${cbName}&mode=last`;
+  if (tab === 'app') url += `&app=${encodeURIComponent(TRACKING.appName)}`;
+  if (APP.classe) url += `&classe=${encodeURIComponent(APP.classe)}`;
+  const s = document.createElement('script'); s.id = cbName; s.src = url;
+  s.onerror = () => { clearTimeout(timeout); delete window[cbName]; s.remove(); content.innerHTML = '<div style="text-align:center;padding:40px;color:#ff4060;">⚠️ Erreur de connexion</div>'; };
+  document.body.appendChild(s);
+}
+function renderLeaderboard(data, tab){
+  const content = document.getElementById('lbContent');
+  const myEmail = (APP.email || '').toLowerCase();
+  if (tab === 'global' && data.length > 0){
+    data = data.slice().sort((a,b) => { const pA = (a.pct != null ? a.pct : (a.pourcentage || 0)), pB = (b.pct != null ? b.pct : (b.pourcentage || 0)); if (pB !== pA) return pB - pA; return (a.totalTemps || a.totalTime || 0) - (b.totalTemps || b.totalTime || 0); });
+    data.forEach((entry,i) => { entry.rang = i + 1; });
+  }
+  const me = data.find(r => r.email === myEmail);
+  let html = '';
+  if (me){
+    const pct = me.pct != null ? me.pct : (me.pourcentage != null ? me.pourcentage : 0);
+    const count = tab === 'app' ? (me.niveauxCompletes || me.niveaux || 0) : (me.appsCompletes || me.apps || 0);
+    const total = tab === 'app' ? (me.totalNiveaux || 0) : (me.totalPossibleNiveaux || 0);
+    const label = tab === 'app' ? 'niveaux' : 'apps';
+    const prog = total > 0 ? count + '/' + total + ' ' + label : count + ' ' + label;
+    html += `<div style="background:rgba(34,214,138,0.08);border:1px solid rgba(34,214,138,0.3);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-around;text-align:center;gap:8px;flex-wrap:wrap">
+      <div><div style="font-size:1.3rem;font-weight:800;color:var(--accent);">#${me.rang}</div><div style="font-size:0.7rem;color:var(--text2);">Rang</div></div>
+      <div><div style="font-size:1.3rem;font-weight:800;">${me.totalPoints}</div><div style="font-size:0.7rem;color:var(--text2);">Points</div></div>
+      <div><div style="font-size:1.3rem;font-weight:800;color:${pct>=80?'#22d68a':pct>=50?'#ff8a3d':'#ff4060'};">${pct}%</div><div style="font-size:0.7rem;color:var(--text2);">Réussite</div></div>
+      <div><div style="font-size:1.3rem;font-weight:800;color:var(--text2);">${prog}</div><div style="font-size:0.7rem;color:var(--text2);">Progression</div></div></div>`;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  html += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;"><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px 4px;color:var(--text2);font-size:0.72rem;">#</th><th style="text-align:left;padding:8px 4px;color:var(--text2);font-size:0.72rem;">Élève</th><th style="text-align:left;padding:8px 4px;color:var(--text2);font-size:0.72rem;">Progression</th><th style="text-align:right;padding:8px 4px;color:var(--text2);font-size:0.72rem;">Pts</th><th style="text-align:right;padding:8px 4px;color:var(--text2);font-size:0.72rem;">%</th><th style="text-align:right;padding:8px 4px;color:var(--text2);font-size:0.72rem;">Temps</th></tr>';
+  data.forEach(row => {
+    const r = row.rang || 0;
+    const name = String(row.email || '').split('@')[0].split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const pct = row.pct != null ? row.pct : (row.pourcentage != null ? row.pourcentage : 0);
+    const temps = row.totalTemps || row.totalTime || 0;
+    const count = tab === 'app' ? (row.niveauxCompletes || row.niveaux || 0) : (row.appsCompletes || row.apps || 0);
+    const total = tab === 'app' ? (row.totalNiveaux || 0) : (row.totalPossibleNiveaux || 0);
+    const bar = total > 0 ? Math.min(100, Math.round(count/total*100)) : 0;
+    const isMe = row.email === myEmail;
+    const pctC = pct >= 80 ? '#22d68a' : pct >= 50 ? '#ff8a3d' : '#ff4060';
+    const tStr = temps > 0 ? formatTime(temps) : '—';
+    html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.03);background:${isMe?'rgba(34,214,138,0.08)':'transparent'};"><td style="padding:8px 4px;font-weight:700;">${r<=3 && r>0 ? medals[r-1] : r}</td><td style="padding:8px 4px;${isMe?'font-weight:800;color:var(--accent);':''}">${esc(name)}</td><td style="padding:8px 4px;"><div style="height:6px;border-radius:4px;background:var(--bg3);width:70px;overflow:hidden"><div style="height:100%;width:${bar}%;background:var(--accent)"></div></div></td><td style="padding:8px 4px;text-align:right;font-weight:700;color:var(--accent);">${row.totalPoints}</td><td style="padding:8px 4px;text-align:right;font-weight:700;color:${pctC};">${pct}%</td><td style="padding:8px 4px;text-align:right;color:var(--text2);font-family:monospace;font-size:0.78rem;">${tStr}</td></tr>`;
+  });
+  html += '</table>';
+  content.innerHTML = html;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  renderScreen();
+  showEmailModal();   // ← TOUJOURS, même si email en localStorage
+}
+init();
+</script>
+</body>
+</html>
